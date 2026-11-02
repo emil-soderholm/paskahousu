@@ -366,6 +366,8 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                 mime_type = "audio/mpeg"
             elif file_path.endswith(".m4a"):
                 mime_type = "audio/mp4"
+            elif file_path.endswith(".jpg") or file_path.endswith(".jpeg"):
+                mime_type = "image/jpeg"
             elif file_path.endswith(".js"):
                 mime_type = "application/javascript"
             elif file_path.endswith(".css"):

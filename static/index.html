@@ -197,17 +197,26 @@
           </div>
         </div>
 
-        <!-- Floating Quick Emotes -->
-        <div class="floating-emotes">
-          <button type="button" class="emote-btn" title="Paska">💩</button>
-          <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
-          <button type="button" class="emote-btn" title="Haha">😂</button>
-          <button type="button" class="emote-btn" title="Liekeissä">🔥</button>
-          <button type="button" class="emote-btn" title="Katsotaan">👀</button>
+        <!-- Floating Quick Emotes & Direct Table Chat Bar -->
+        <div class="table-chat-bar">
+          <div class="floating-emotes">
+            <button type="button" class="emote-btn" title="Paska">💩</button>
+            <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
+            <button type="button" class="emote-btn" title="Haha">😂</button>
+            <button type="button" class="emote-btn" title="Liekeissä">🔥</button>
+            <button type="button" class="emote-btn" title="Katsotaan">👀</button>
+            <button type="button" class="emote-btn" title="Peukku">👍</button>
+            <button type="button" class="emote-btn" title="Itku">😭</button>
+          </div>
+          <form id="tableQuickChatForm" class="table-quick-chat-form">
+            <input type="text" id="tableQuickChatInput" class="table-quick-chat-input" placeholder="Viesti pöytään... (Enter)" maxlength="80" autocomplete="off">
+            <button type="submit" class="table-quick-chat-send" title="Lähetä">➤</button>
+          </form>
         </div>
 
         <!-- Player Bottom Controls & Hand Area -->
         <div class="player-bottom-area">
+          <div id="myBubbleAnchor" class="table-bubble-anchor my-bubble-anchor"></div>
           <div id="currentTurnLabel" class="current-turn-label">Sinun vuorosi!</div>
 
           <!-- In Arabia: Player's Table Cards (3 slots: face-down underneath, face-up on top) -->

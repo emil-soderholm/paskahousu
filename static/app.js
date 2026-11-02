@@ -315,7 +315,21 @@ class GameApp {
       });
     }
 
-    // Floating emotes
+    // Table quick chat form & direct emotes
+    const tableQuickChatForm = document.getElementById('tableQuickChatForm');
+    const tableQuickChatInput = document.getElementById('tableQuickChatInput');
+    if (tableQuickChatForm && tableQuickChatInput) {
+      tableQuickChatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = tableQuickChatInput.value.trim();
+        if (text) {
+          this.sendWS({ type: 'chat', text });
+          tableQuickChatInput.value = '';
+          tableQuickChatInput.blur();
+        }
+      });
+    }
+
     document.querySelectorAll('.emote-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const emote = btn.textContent.trim();
@@ -323,6 +337,77 @@ class GameApp {
         window.sounds.playPop();
       });
     });
+
+    // Center play pile click & drag/drop to play
+    const playPileArea = document.getElementById('playPileArea');
+    if (playPileArea) {
+      // 1. Click on pile to play selected cards
+      playPileArea.addEventListener('click', () => {
+        const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+        if (!isMyTurn) return;
+
+        const hasHandSelected = this.selectedCardIndices.size > 0;
+        const hasTableUpSelected = this.selectedTableUpIndices.size > 0;
+        if (hasHandSelected || hasTableUpSelected) {
+          window.sounds.playPop();
+          this.handlePlayClick();
+        }
+      });
+
+      // 2. Drag over & drop on pile to play
+      playPileArea.addEventListener('dragover', (e) => {
+        const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+        if (!isMyTurn) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        playPileArea.classList.add('drag-over');
+      });
+
+      playPileArea.addEventListener('dragleave', () => {
+        playPileArea.classList.remove('drag-over');
+      });
+
+      playPileArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        playPileArea.classList.remove('drag-over');
+        playPileArea.classList.remove('can-play-here');
+
+        const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+        if (!isMyTurn) return;
+
+        const dataStr = e.dataTransfer.getData('text/plain') || '';
+        if (dataStr.startsWith('hand:')) {
+          const idx = parseInt(dataStr.replace('hand:', ''), 10);
+          if (!isNaN(idx) && !this.selectedCardIndices.has(idx)) {
+            const me = this.state.players.find(p => p.id === this.playerId);
+            if (me && me.hand && me.hand[idx]) {
+              const card = me.hand[idx];
+              if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
+                if (this.selectedCardIndices.size > 0) {
+                  const firstIdx = Array.from(this.selectedCardIndices)[0];
+                  if (me.hand[firstIdx].rank !== card.rank) {
+                    this.selectedCardIndices.clear();
+                  }
+                }
+              }
+              this.selectedCardIndices.add(idx);
+            }
+          }
+        } else if (dataStr.startsWith('table_up:')) {
+          const s = parseInt(dataStr.replace('table_up:', ''), 10);
+          if (!isNaN(s)) {
+            this.selectedTableUpIndices.add(s);
+          }
+        }
+
+        const hasHandSelected = this.selectedCardIndices.size > 0;
+        const hasTableUpSelected = this.selectedTableUpIndices.size > 0;
+        if (hasHandSelected || hasTableUpSelected) {
+          window.sounds.playPop();
+          this.handlePlayClick();
+        }
+      });
+    }
 
     // Copy room link
     const copyBtn = document.getElementById('copyRoomLinkBtn');
@@ -657,7 +742,7 @@ class GameApp {
       this.handleStateAudio(oldState, this.state);
       this.render();
     } else if (msg.type === 'chat_message') {
-      this.appendChatMessage(msg.message);
+      this.handleChatMessage(msg.message);
     } else if (msg.type === 'error') {
       alert(msg.message);
     }
@@ -911,6 +996,7 @@ class GameApp {
       }
 
       seat.innerHTML = `
+        <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
         <div class="opponent-avatar-box">
           ${p.avatar}
           <div class="opponent-cards-badge">🂠 ${p.card_count}</div>
@@ -940,6 +1026,15 @@ class GameApp {
     // 4. Render Discard Pile
     const pileArea = document.getElementById('playPileArea');
     pileArea.innerHTML = '';
+
+    const hasSelection = (this.selectedCardIndices.size > 0 || this.selectedTableUpIndices.size > 0);
+    if (isMyTurn && hasSelection) {
+      pileArea.classList.add('can-play-here');
+      pileArea.title = this.lang === 'fi' ? 'Pelaa valitut kortit pöytään klikkaamalla tai vetämällä!' : 'Click or drop to play selected cards!';
+    } else {
+      pileArea.classList.remove('can-play-here');
+      pileArea.title = '';
+    }
 
     if (this.state.play_pile.length === 0) {
       pileArea.innerHTML = `
@@ -1087,6 +1182,30 @@ class GameApp {
           if (isSelected) upWrap.classList.add('selected');
 
           const cardEl = createCardElement(upCard);
+          if (isPhaseTableUp && isMyTurn) {
+            cardEl.setAttribute('draggable', 'true');
+            cardEl.addEventListener('dragstart', (e) => {
+              if (!this.selectedTableUpIndices.has(s)) {
+                if (this.selectedTableUpIndices.size > 0) {
+                  const firstIdx = Array.from(this.selectedTableUpIndices)[0];
+                  if (me.table_up[firstIdx].rank !== upCard.rank) {
+                    this.selectedTableUpIndices.clear();
+                  }
+                }
+                this.selectedTableUpIndices.add(s);
+              }
+              e.dataTransfer.setData('text/plain', `table_up:${s}`);
+              e.dataTransfer.effectAllowed = 'move';
+              cardEl.classList.add('is-dragging');
+              const pile = document.getElementById('playPileArea');
+              if (pile) pile.classList.add('can-play-here');
+            });
+            cardEl.addEventListener('dragend', () => {
+              cardEl.classList.remove('is-dragging');
+              const pile = document.getElementById('playPileArea');
+              if (pile) pile.classList.remove('drag-over');
+            });
+          }
           upWrap.appendChild(cardEl);
           slotEl.appendChild(upWrap);
 
@@ -1152,6 +1271,73 @@ class GameApp {
 
         // Set card z-index order
         cardEl.style.zIndex = idx + 10;
+        cardEl.setAttribute('data-hand-index', idx);
+
+        if (isMyTurn) {
+          cardEl.setAttribute('draggable', 'true');
+
+          cardEl.addEventListener('dragstart', (e) => {
+            // If dragging, ensure this card is selected
+            if (!this.selectedCardIndices.has(idx)) {
+              if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
+                if (this.selectedCardIndices.size > 0) {
+                  const firstIdx = Array.from(this.selectedCardIndices)[0];
+                  if (me.hand[firstIdx].rank !== card.rank) {
+                    this.selectedCardIndices.clear();
+                  }
+                }
+              }
+              this.selectedCardIndices.add(idx);
+            }
+            e.dataTransfer.setData('text/plain', `hand:${idx}`);
+            e.dataTransfer.effectAllowed = 'move';
+            cardEl.classList.add('is-dragging');
+            const pile = document.getElementById('playPileArea');
+            if (pile) pile.classList.add('can-play-here');
+          });
+
+          cardEl.addEventListener('dragend', () => {
+            cardEl.classList.remove('is-dragging');
+            const pile = document.getElementById('playPileArea');
+            if (pile) {
+              pile.classList.remove('drag-over');
+            }
+          });
+
+          // Mobile touch swipe up to play
+          let touchStartY = null;
+          let touchStartX = null;
+          cardEl.addEventListener('touchstart', (e) => {
+            if (!isMyTurn) return;
+            const touch = e.touches[0];
+            touchStartY = touch.clientY;
+            touchStartX = touch.clientX;
+          }, { passive: true });
+
+          cardEl.addEventListener('touchend', (e) => {
+            if (!isMyTurn || touchStartY === null) return;
+            const touch = e.changedTouches[0];
+            const diffY = touchStartY - touch.clientY;
+            const diffX = Math.abs(touchStartX - touch.clientX);
+            if (diffY > 60 && diffY > diffX) {
+              if (!this.selectedCardIndices.has(idx)) {
+                if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
+                  if (this.selectedCardIndices.size > 0) {
+                    const firstIdx = Array.from(this.selectedCardIndices)[0];
+                    if (me.hand[firstIdx].rank !== card.rank) {
+                      this.selectedCardIndices.clear();
+                    }
+                  }
+                }
+                this.selectedCardIndices.add(idx);
+              }
+              window.sounds.playPop();
+              this.handlePlayClick();
+            }
+            touchStartY = null;
+            touchStartX = null;
+          }, { passive: true });
+        }
 
         cardEl.addEventListener('click', () => {
           const canSwap = this.state.rules.mode === 'arabia' && me && !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
@@ -1358,6 +1544,54 @@ class GameApp {
 
     // Host replay button visibility
     document.getElementById('playAgainBtn').style.display = this.isHost ? 'block' : 'none';
+  }
+
+  handleChatMessage(msg) {
+    this.appendChatMessage(msg);
+    this.showTableBubble(msg);
+  }
+
+  showTableBubble(msg) {
+    const isMe = (msg.player_id === this.playerId);
+    const anchor = isMe 
+      ? document.getElementById('myBubbleAnchor') 
+      : document.getElementById(`bubbleAnchor-${msg.player_id}`);
+
+    if (!anchor) return;
+
+    // Detect if text is 1-4 emojis
+    const emojiRegex = /^(\p{Extended_Pictographic}|\u200d|\ufe0f|\s)+$/u;
+    const isEmoteOnly = emojiRegex.test(msg.text.trim()) && msg.text.trim().length <= 16;
+
+    // Clean up any old bubble in this anchor
+    anchor.innerHTML = '';
+
+    const bubble = document.createElement('div');
+    bubble.className = `floating-table-bubble ${isEmoteOnly ? 'emote-only' : ''} ${isMe ? 'my-bubble' : ''}`;
+
+    if (isEmoteOnly) {
+      bubble.innerHTML = `<span class="table-bubble-emote">${msg.text}</span>`;
+    } else {
+      const escDiv = document.createElement('div');
+      escDiv.textContent = msg.text;
+      bubble.innerHTML = `
+        <span class="table-bubble-sender">${msg.avatar} ${msg.name}</span>
+        <span class="table-bubble-text">${escDiv.innerHTML}</span>
+      `;
+    }
+
+    anchor.appendChild(bubble);
+    window.sounds.playPop();
+
+    // Fade out after 4.2 seconds
+    setTimeout(() => {
+      bubble.classList.add('fading-out');
+      setTimeout(() => {
+        if (bubble.parentNode === anchor) {
+          anchor.removeChild(bubble);
+        }
+      }, 400);
+    }, 4200);
   }
 
   appendChatMessage(msg) {
