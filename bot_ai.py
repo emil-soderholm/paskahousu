@@ -158,34 +158,38 @@ class BotAI:
             return BotAI._generate_bluff(game, bot, legal_ranks, rank_to_indices)
 
     @staticmethod
-    def _pick_best_honest_rank(game: GameState, held_legal_ranks: List[str], pile_size: int) -> str:
+    def _pick_best_honest_rank(game: GameState, held_legal_ranks: List[str], pile_size: int, bot: Optional[Player] = None) -> str:
         # In Arabia, 10 is kaato, 2 is reset, Ace is normal high rank
         if game.rules.mode == "arabia":
             normal = [r for r in held_legal_ranks if r not in ['2', '10']]
             kaato = [r for r in held_legal_ranks if r == '10']
             twos = [r for r in held_legal_ranks if r == '2']
-        else:
-            normal = [r for r in held_legal_ranks if r not in ['2', '10', 'A']]
-            kaato = [r for r in held_legal_ranks if r in ['10', 'A']]
-            twos = [r for r in held_legal_ranks if r == '2']
 
-        # If pile has 3+ cards, Kaato is tempting!
-        if kaato and pile_size >= 3:
-            return kaato[0]
+            # If pile has 3+ cards, Kaato is tempting!
+            if kaato and pile_size >= 3:
+                return kaato[0]
 
-        # Otherwise prefer normal lowest card
-        if normal:
-            # Sort by rank value
-            normal.sort(key=lambda r: RANK_VALUES[r])
-            return normal[0]
+            # If top card is high (>= J) and bot holds a 2, playing 2 lets bot play low cards right after!
+            p = bot or game.current_player()
+            top_entry = game.get_top_pile_card()
+            top_rank = top_entry.declared_rank if top_entry else None
+            if p and twos and top_rank and top_rank != '2' and RANK_VALUES.get(top_rank, 0) >= 11:
+                has_lower_cards = any(c.value < RANK_VALUES[top_rank] and c.rank not in ['2', '10'] for c in p.hand)
+                if has_lower_cards and random.random() < 0.75:
+                    return '2'
 
-        # If only kaato or twos left
-        if twos:
-            return '2'
-        if kaato:
-            return kaato[0]
+            # Otherwise prefer normal lowest card
+            if normal:
+                normal.sort(key=lambda r: RANK_VALUES[r])
+                return normal[0]
 
-        return held_legal_ranks[0]
+            # If only kaato or twos left
+            if twos:
+                return '2'
+            if kaato:
+                return kaato[0]
+
+            return held_legal_ranks[0]
 
     @staticmethod
     def _generate_bluff(

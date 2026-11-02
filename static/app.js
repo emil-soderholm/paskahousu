@@ -6,7 +6,7 @@
 // Multi-language strings (Finnish & English)
 const I18N = {
   fi: {
-    appTitle: "Valepaskahousu",
+    appTitle: "Tuutan ja Emailin korttihuane",
     tagline: "Perinteinen suomalainen korttipeli",
     createRoom: "Luo uusi pelihuone",
     joinRoom: "Liity koodilla",
@@ -67,7 +67,7 @@ const I18N = {
     confirmLeave: "Kyllä, poistu"
   },
   en: {
-    appTitle: "Valepaskahousu",
+    appTitle: "Tuutan ja Emailin korttihuane",
     tagline: "Classic Finnish Bluffing Card Game",
     createRoom: "Create Game Room",
     joinRoom: "Join With Code",

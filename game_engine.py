@@ -667,6 +667,22 @@ class GameState:
                 self._clear_pile_kaatuu(player)
                 return {"success": True, "cleared": True}
 
+            # In Arabia: if player plays a 2, the same player gets to immediately play another card on top of the 2!
+            if self.rules.mode == "arabia" and declared_rank == '2':
+                if source == "hand":
+                    self._refill_hand(player)
+                self._check_player_out(player)
+                if self.status != "GAME_OVER":
+                    if player.is_out:
+                        self._advance_turn()
+                    else:
+                        self.add_log(
+                            f"{player.name} löi kakkosen ja saa laittaa heti uuden kortin sen päälle!",
+                            f"{player.name} played a 2 and gets to play another card on top immediately!",
+                            "two_continue"
+                        )
+                return {"success": True, "cleared": False, "continue_turn": True}
+
             # Hand refill and advance turn
             if source == "hand":
                 self._refill_hand(player)
@@ -726,6 +742,20 @@ class GameState:
             if clears:
                 self._clear_pile_kaatuu(player)
                 return {"success": True, "legal": True, "card": card.to_dict(), "cleared": True}
+
+            # In Arabia: if blind card is a 2, player continues their turn!
+            if card.rank == '2':
+                self._check_player_out(player)
+                if self.status != "GAME_OVER":
+                    if player.is_out:
+                        self._advance_turn()
+                    else:
+                        self.add_log(
+                            f"{player.name} käänsi kakkosen ja saa jatkaa vuoroaan!",
+                            f"{player.name} flipped a 2 and continues their turn!",
+                            "two_continue"
+                        )
+                return {"success": True, "legal": True, "card": card.to_dict(), "cleared": False, "continue_turn": True}
 
             self._check_player_out(player)
             self._advance_turn()
@@ -1009,6 +1039,21 @@ class GameState:
             if clears:
                 self._clear_pile_kaatuu(player)
                 return {"success": True, "fit": True, "card": card.to_dict(), "cleared": True}
+
+            # In Arabia: if flipped card is 2, player continues their turn!
+            if self.rules.mode == "arabia" and card.rank == '2':
+                self._refill_hand(player)
+                self._check_player_out(player)
+                if self.status != "GAME_OVER":
+                    if player.is_out:
+                        self._advance_turn()
+                    else:
+                        self.add_log(
+                            f"{player.name} käänsi pakasta kakkosen ja saa jatkaa vuoroaan!",
+                            f"{player.name} flipped a 2 from deck and continues their turn!",
+                            "two_continue"
+                        )
+                return {"success": True, "fit": True, "card": card.to_dict(), "cleared": False, "continue_turn": True}
 
             self._refill_hand(player)
             self._check_player_out(player)
