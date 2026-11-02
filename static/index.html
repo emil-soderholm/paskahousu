@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Valepaskahousu & Paskahousu - Multiplayer</title>
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="logo-group">
+      <span class="logo-icon">🃏</span>
+      <span class="logo-text" data-i18n="appTitle">Valepaskahousu</span>
+    </div>
+
+    <div class="header-actions">
+      <div id="headerRoomCode" class="icon-btn room-badge" style="display:none;"></div>
+      <button id="serverConfigBtn" class="icon-btn" title="Palvelinasetukset (public_html / etäpalvelin)">⚙️</button>
+      <button id="soundToggleBtn" class="icon-btn" title="Äänet päälle / pois">🔊</button>
+      <button id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
+      <button id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main id="app">
+
+    <!-- LOBBY SCREEN -->
+    <section id="lobbyScreen" class="screen active">
+      <div class="lobby-container">
+        <div class="lobby-card">
+          <h1 class="lobby-title" data-i18n="appTitle">Valepaskahousu</h1>
+          <p class="lobby-subtitle" data-i18n="tagline">Perinteinen suomalainen korttipeli</p>
+
+          <!-- Room Code & Join/Create forms (Shown when not in a room) -->
+          <div id="joinOrCreateSection">
+            <div class="form-group">
+              <label class="form-label" data-i18n="yourName">Nimimerkkisi</label>
+              <input type="text" id="playerNameInput" class="form-input" placeholder="Matti" maxlength="15">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-i18n="chooseAvatar">Valitse hahmo</label>
+              <div class="avatar-grid">
+                <button type="button" class="avatar-btn selected" data-avatar="🦊">🦊</button>
+                <button type="button" class="avatar-btn" data-avatar="🐻">🐻</button>
+                <button type="button" class="avatar-btn" data-avatar="🐺">🐺</button>
+                <button type="button" class="avatar-btn" data-avatar="🦅">🦅</button>
+                <button type="button" class="avatar-btn" data-avatar="🤠">🤠</button>
+                <button type="button" class="avatar-btn" data-avatar="😎">😎</button>
+                <button type="button" class="avatar-btn" data-avatar="🧝">🧝</button>
+                <button type="button" class="avatar-btn" data-avatar="🧙‍♂️">🧙‍♂️</button>
+              </div>
+            </div>
+
+            <button type="button" id="createRoomBtn" class="btn-primary" data-i18n="createRoom">Luo uusi pelihuone</button>
+
+            <div style="text-align: center; margin: 14px 0; color: var(--text-muted); font-size: 13px;">— TAI —</div>
+
+            <div class="form-group">
+              <label class="form-label" data-i18n="roomCode">Huonekoodi</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="joinRoomCodeInput" class="form-input" placeholder="ABCD" maxlength="8" style="text-transform: uppercase;">
+                <button type="button" id="joinRoomBtn" class="btn-secondary" style="margin-top:0; width: auto; padding: 0 20px;" data-i18n="joinRoom">Liity</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inside Room Waiting View (Shown once connected to room) -->
+          <div id="roomWaitingSection" style="display: none;">
+            <div class="room-header-box">
+              <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;" data-i18n="roomCode">Huonekoodi</div>
+              <div id="roomCodeDisplay" class="room-code-display">----</div>
+              <button type="button" id="copyRoomLinkBtn" class="copy-link-btn" data-i18n="copyLink">Kopioi kutsulinkki</button>
+            </div>
+
+            <!-- Players in lobby -->
+            <div class="player-list-section">
+              <label class="form-label" data-i18n="waitingPlayers">Odotetaan pelaajia...</label>
+              <div id="lobbyPlayersGrid" class="player-cards-grid"></div>
+            </div>
+
+            <!-- House rules -->
+            <div class="rules-box">
+              <label class="form-label" data-i18n="rulesHeading" style="margin-bottom: 10px;">Huoneen säännöt</label>
+              <div class="rules-grid">
+                <div>
+                  <label class="form-label" data-i18n="gameMode">Pelimuoto</label>
+                  <select id="ruleGameMode" class="rule-select">
+                    <option value="valepaskahousu" data-i18n="modeValepaska">Valepaskahousu (Valehtelu)</option>
+                    <option value="paskahousu" data-i18n="modeAvopaska">Paskahousu (Avopeli)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" data-i18n="courtRule">Seiskan sääntö (Kuvat)</label>
+                  <select id="ruleCourt" class="rule-select">
+                    <option value="7" data-i18n="court7">Vain 7+ päälle (Normaali)</option>
+                    <option value="9" data-i18n="court9">Vain 9+ päälle (Tiukka)</option>
+                    <option value="0" data-i18n="courtFree">Kaikkien päälle (Vapaa)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" data-i18n="twoRule">Kakkosen sääntö</label>
+                  <select id="ruleTwo" class="rule-select">
+                    <option value="only_two" data-i18n="twoOnlyTwo">Vain toinen 2 päälle</option>
+                    <option value="reset" data-i18n="twoReset">Kakkonen nollaa pinon</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" data-i18n="emptyTenAce">Kymppi/Ässä tyhjään</label>
+                  <select id="ruleEmptyTen" class="rule-select">
+                    <option value="next_pickup" data-i18n="emptyPickup">Seuraava nostaa</option>
+                    <option value="forbidden" data-i18n="emptyForbidden">Kielletty tyhjään</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <button type="button" id="startGameBtn" class="btn-primary" data-i18n="startGame">Aloita peli</button>
+            <button type="button" id="addBotBtn" class="btn-secondary" data-i18n="addBot">+ Lisää botti</button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME TABLE SCREEN -->
+    <section id="gameScreen" class="screen">
+      <div class="game-table-container">
+
+        <!-- Opponents Area (Top / Sides) -->
+        <div id="opponentsArea" class="opponents-area"></div>
+
+        <!-- Center Table: Deck & Discard Pile -->
+        <div class="table-center-area">
+
+          <!-- Draw deck -->
+          <div id="drawDeckArea" class="deck-stack" title="Nostopakka">
+            <div class="deck-card-layer" style="transform: translate(-3px, -3px);"></div>
+            <div class="deck-card-layer" style="transform: translate(-1px, -1px);"></div>
+            <div class="deck-card-layer"></div>
+            <div id="deckCountBadge" class="deck-counter-badge">37 pakka</div>
+          </div>
+
+          <!-- Play / Discard Pile -->
+          <div id="playPileArea" class="play-pile-area">
+            <div class="pile-empty-slot">
+              <span data-i18n="emptyPile">Pöytä on tyhjä</span>
+            </div>
+          </div>
+
+          <!-- Cleared cards counter (Dead pile) -->
+          <div class="dead-pile-indicator">
+            <span>🔥</span>
+            <span id="deadCountBadge">0 kaadettu</span>
+          </div>
+
+        </div>
+
+        <!-- CHALLENGE BANNER (Valepaska countdown) -->
+        <div id="challengeBanner" class="challenge-banner" style="display: none;">
+          <div class="challenge-title">
+            <span id="challengePlayerName">Pekka väittää lyöneensä:</span>
+          </div>
+          <div id="challengeClaimDisplay" class="challenge-claim">2x Kuningas (K)</div>
+          <div class="challenge-timer-bar">
+            <div id="challengeTimerFill" class="challenge-timer-fill"></div>
+          </div>
+          <div class="challenge-actions">
+            <button type="button" id="challengeBtn" class="btn-challenge" data-i18n="challenge">HAASTA! ⚡</button>
+            <button type="button" id="passBtn" class="btn-pass" data-i18n="pass">Uskon 👍</button>
+          </div>
+        </div>
+
+        <!-- REVEAL SCREEN OVERLAY (Challenge resolution) -->
+        <div id="revealOverlay" class="reveal-overlay" style="display: none;">
+          <div class="reveal-card-box">
+            <div id="revealVerdict" class="reveal-verdict lied">VALEHTELI! 🤥</div>
+            <div id="revealDetails" class="reveal-details">Pekka jäi kiinni valheesta ja nostaa pöydän!</div>
+            <div id="revealedCardsRow" class="revealed-cards-row"></div>
+          </div>
+        </div>
+
+        <!-- Floating Quick Emotes -->
+        <div class="floating-emotes">
+          <button type="button" class="emote-btn" title="Paska">💩</button>
+          <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
+          <button type="button" class="emote-btn" title="Haha">😂</button>
+          <button type="button" class="emote-btn" title="Liekeissä">🔥</button>
+          <button type="button" class="emote-btn" title="Katsotaan">👀</button>
+        </div>
+
+        <!-- Player Bottom Controls & Hand Area -->
+        <div class="player-bottom-area">
+          <div id="currentTurnLabel" style="font-size: 13px; font-weight: 800; margin-bottom: 8px;">Sinun vuorosi!</div>
+
+          <!-- Action Buttons -->
+          <div class="action-button-bar">
+            <button type="button" id="playCardsBtn" class="action-btn btn-play-action" disabled data-i18n="playCards">Pelaa valitut kortit</button>
+            <button type="button" id="flipDeckBtn" class="action-btn" data-i18n="flipDeck">Käännä pakasta</button>
+            <button type="button" id="pickupPileBtn" class="action-btn" data-i18n="pickupPile">Nosta pöytä</button>
+          </div>
+
+          <!-- Fanned Hand Cards -->
+          <div id="handCardsContainer" class="hand-cards-container"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- GAME OVER SCREEN OVERLAY -->
+    <section id="gameOverScreen" class="screen modal-overlay">
+      <div class="game-over-box">
+        <h1 style="font-size: 28px; font-weight: 900; color: var(--gold); margin-bottom: 6px;" data-i18n="gameOver">Peli Päättynyt!</h1>
+
+        <!-- The Paskahousu (Loser) -->
+        <div class="paskahousu-crown-box">
+          <div class="paskahousu-emoji">💩👖</div>
+          <div style="font-size: 13px; font-weight: 700; color: #ff6b6b; text-transform: uppercase;" data-i18n="paskahousuTitle">Pelin häviäjä ja PASKAHOUSU:</div>
+          <div id="paskahousuLoserName" class="paskahousu-name">Matti</div>
+        </div>
+
+        <!-- Podium of Winners -->
+        <div id="gameWinnersList" class="winners-list"></div>
+
+        <button type="button" id="playAgainBtn" class="btn-primary" data-i18n="playAgain">Pelaa uudelleen</button>
+      </div>
+    </section>
+
+    <!-- VALEPASKA BLUFF DECLARATION MODAL -->
+    <div id="bluffModal" class="modal-overlay">
+      <div class="modal-content">
+        <h2 class="modal-title" data-i18n="bluffModalTitle">Mitä väität pelaavasi?</h2>
+        <p class="modal-subtitle" data-i18n="bluffModalSubtitle">Voit kertoa totuuden tai valehdella pokalla naamalla!</p>
+
+        <div style="text-align: center; font-size: 18px; font-weight: 800; color: var(--gold); margin-bottom: 14px;">
+          <span id="bluffModalQty">1x</span>
+        </div>
+
+        <!-- Ranks 3 to 2 -->
+        <div class="rank-selector-grid">
+          <button type="button" class="rank-choice-btn selected" data-rank="3">3</button>
+          <button type="button" class="rank-choice-btn" data-rank="4">4</button>
+          <button type="button" class="rank-choice-btn" data-rank="5">5</button>
+          <button type="button" class="rank-choice-btn" data-rank="6">6</button>
+          <button type="button" class="rank-choice-btn" data-rank="7">7</button>
+          <button type="button" class="rank-choice-btn" data-rank="8">8</button>
+          <button type="button" class="rank-choice-btn" data-rank="9">9</button>
+          <button type="button" class="rank-choice-btn" data-rank="10">10 💥</button>
+          <button type="button" class="rank-choice-btn" data-rank="J">J ⚔️</button>
+          <button type="button" class="rank-choice-btn" data-rank="Q">Q 👑</button>
+          <button type="button" class="rank-choice-btn" data-rank="K">K 🤴</button>
+          <button type="button" class="rank-choice-btn" data-rank="A">A ⭐</button>
+          <button type="button" class="rank-choice-btn" data-rank="2" style="grid-column: span 4; border-color: rgba(245, 197, 24, 0.4);">2 (Valtti) ⚡</button>
+        </div>
+
+        <button type="button" id="confirmBluffPlayBtn" class="btn-primary" data-i18n="confirmPlay">Lyö pöytään</button>
+        <button type="button" id="cancelBluffPlayBtn" class="btn-secondary" data-i18n="cancel">Peruuta</button>
+      </div>
+    </div>
+
+    <!-- SERVER CONFIG MODAL (for public_html or custom hosting) -->
+    <div id="serverModal" class="modal-overlay">
+      <div class="modal-content">
+        <h2 class="modal-title">⚙️ Palvelinasetukset</h2>
+        <p class="modal-subtitle">Käytä tätä, jos hostaat sivua koulun <code>public_html</code> -kansiossa tai haluat yhdistää ulkoiseen pelipalvelimeen.</p>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label">Pelipalvelimen osoite (WebSocket / HTTP)</label>
+          <input type="text" id="customServerInput" class="form-input" placeholder="esim. my-game.onrender.com tai localhost:8000">
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Jätä tyhjäksi, jos ajat peliä suoraan samassa osoitteessa (oletus).</p>
+        </div>
+
+        <div style="font-size: 12px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 16px;">
+          <strong>Nykyinen yhteysosoite:</strong><br>
+          <code id="currentWsUrlDisplay" style="color: var(--gold); word-break: break-all;">ws://localhost:8000/ws</code>
+        </div>
+
+        <button type="button" id="saveServerBtn" class="btn-primary">Tallenna ja yhdistä</button>
+        <button type="button" id="resetServerBtn" class="btn-secondary">Palauta oletus</button>
+        <button type="button" id="closeServerModalBtn" class="btn-secondary" style="border: none; background: transparent; color: var(--text-muted);">Sulje</button>
+      </div>
+    </div>
+
+    <!-- IN-GAME CHAT DRAWER -->
+    <aside id="chatDrawer" class="chat-drawer">
+      <div class="chat-header">
+        <span style="font-weight: 800; font-size: 14px;">💬 Keskustelu</span>
+        <button type="button" id="closeChatBtn" class="icon-btn" style="padding: 4px 8px;">✖</button>
+      </div>
+
+      <div id="chatMessagesBox" class="chat-messages"></div>
+
+      <form id="chatForm" class="chat-input-bar">
+        <input type="text" id="chatInput" class="chat-input" placeholder="Kirjoita viesti..." data-i18n-ph="chatPlaceholder" maxlength="150" autocomplete="off">
+        <button type="submit" class="btn-primary" style="width: auto; padding: 6px 14px; font-size: 13px;" data-i18n="send">Lähetä</button>
+      </form>
+    </aside>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="cards.js"></script>
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

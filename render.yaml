@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: valepaskahousu
+    env: python
+    buildCommand: ""
+    startCommand: "python3 server.py"
+    envVars:
+      - key: PORT
+        value: 10000
+
