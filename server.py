@@ -349,16 +349,18 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
             return
 
         # Serve static files
-        if path == "/" or path == "":
+        clean_path = path.split("?")[0]
+        if clean_path == "/" or clean_path == "":
             file_name = "index.html"
         else:
-            file_name = path.lstrip("/")
+            file_name = clean_path.lstrip("/")
 
         file_path = os.path.normpath(os.path.join(STATIC_DIR, file_name))
         # Prevent directory traversal
         if not file_path.startswith(STATIC_DIR) or not os.path.isfile(file_path):
             # Fallback to index.html for SPA routes
             file_path = os.path.join(STATIC_DIR, "index.html")
+            file_name = "index.html"
 
         if os.path.isfile(file_path):
             mime_type, _ = mimetypes.guess_type(file_path)
@@ -420,12 +422,17 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
                     pass
 
             # Full file response with Accept-Ranges
+            if file_name.endswith(".html") or file_name.endswith(".js") or file_name.endswith(".css"):
+                cache_header = "Cache-Control: no-cache, no-store, must-revalidate\r\nPragma: no-cache\r\nExpires: 0\r\n"
+            else:
+                cache_header = "Cache-Control: public, max-age=86400\r\n"
+
             resp_header = (
                 f"HTTP/1.1 200 OK\r\n"
                 f"Content-Type: {mime_type}\r\n"
                 f"Content-Length: {file_size}\r\n"
                 f"Accept-Ranges: bytes\r\n"
-                f"Cache-Control: public, max-age=86400\r\n"
+                f"{cache_header}"
                 f"Connection: keep-alive\r\n\r\n"
             ).encode("utf-8")
             writer.write(resp_header)

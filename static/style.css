@@ -194,7 +194,10 @@ body {
   background-size: cover;
   background-position: left 15% center;
   background-repeat: no-repeat;
-  position: relative;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   align-items: center;
   justify-content: flex-end; /* Keeps lobby card on the right half */
