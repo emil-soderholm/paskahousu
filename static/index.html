@@ -20,11 +20,20 @@
     <div class="header-actions">
       <div id="headerRoomCode" class="icon-btn room-badge" style="display:none;"></div>
       <button id="leaveGameBtn" class="icon-btn btn-leave-game" style="display:none;" title="Poistu pelistä">🚪 <span data-i18n="leaveGame">Poistu</span></button>
-      <button id="soundToggleBtn" class="icon-btn" title="Äänet päälle / pois">🔊</button>
+      <div class="music-widget">
+        <button id="musicToggleBtn" class="icon-btn" title="Taustamusiikki (Päälle / Pois)">🎵</button>
+        <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.05" value="0.3" class="volume-slider" title="Musiikin äänenvoimakkuus">
+      </div>
+      <button id="soundToggleBtn" class="icon-btn" title="Ääniefektit päälle / pois">🔊</button>
       <button id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
       <button id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
     </div>
   </header>
+
+  <!-- Background Music Audio Element -->
+  <audio id="bgMusicPlayer" loop preload="auto">
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
 
   <!-- Main Viewport -->
   <main id="app">

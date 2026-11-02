@@ -139,6 +139,7 @@ class GameApp {
     this.challengeInterval = null;
 
     this.initDOM();
+    this.initMusic();
     this.initURLParams();
     this.applyLanguage();
   }
@@ -383,6 +384,71 @@ class GameApp {
     document.getElementById('playAgainBtn').addEventListener('click', () => {
       this.sendWS({ type: 'restart_game' });
     });
+  }
+
+  initMusic() {
+    this.musicPlayer = document.getElementById('bgMusicPlayer');
+    const musicBtn = document.getElementById('musicToggleBtn');
+    const volumeSlider = document.getElementById('musicVolumeSlider');
+    const widget = document.querySelector('.music-widget');
+
+    if (!this.musicPlayer) return;
+
+    // Load saved volume
+    const savedVol = localStorage.getItem('valepaska_music_vol');
+    if (savedVol !== null) {
+      this.musicPlayer.volume = parseFloat(savedVol);
+      if (volumeSlider) volumeSlider.value = savedVol;
+    } else {
+      this.musicPlayer.volume = 0.35;
+      if (volumeSlider) volumeSlider.value = '0.35';
+    }
+
+    const updateUI = () => {
+      const isPlaying = !this.musicPlayer.paused;
+      if (widget) widget.classList.toggle('playing', isPlaying);
+      if (musicBtn) musicBtn.textContent = isPlaying ? '🎶' : '🎵';
+    };
+
+    if (musicBtn) {
+      musicBtn.addEventListener('click', () => {
+        if (this.musicPlayer.paused) {
+          this.musicPlayer.play().then(() => {
+            localStorage.setItem('valepaska_music_on', 'true');
+            updateUI();
+          }).catch(e => {
+            console.warn('Musiikin toisto vaatii tiedoston static/music.mp3:', e);
+            alert((this.lang === 'fi')
+              ? 'Laita kappale kansioon: static/music.mp3 niin musiikki soi!'
+              : 'Place audio file in static/music.mp3 to play!');
+          });
+        } else {
+          this.musicPlayer.pause();
+          localStorage.setItem('valepaska_music_on', 'false');
+          updateUI();
+        }
+      });
+    }
+
+    if (volumeSlider) {
+      volumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.musicPlayer.volume = val;
+        localStorage.setItem('valepaska_music_vol', val.toString());
+      });
+    }
+
+    // Auto-start on first user interaction if previously enabled
+    const autoStartOnInteraction = () => {
+      if (localStorage.getItem('valepaska_music_on') === 'true' && this.musicPlayer.paused) {
+        this.musicPlayer.play().then(updateUI).catch(() => {});
+      }
+    };
+    window.addEventListener('click', autoStartOnInteraction, { once: true });
+    window.addEventListener('keydown', autoStartOnInteraction, { once: true });
+
+    this.musicPlayer.addEventListener('play', updateUI);
+    this.musicPlayer.addEventListener('pause', updateUI);
   }
 
   getApiBase() {
