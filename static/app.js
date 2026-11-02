@@ -23,6 +23,9 @@ const I18N = {
     gameMode: "Pelimuoto",
     modeValepaska: "Valepaskahousu (Valehtelu sallittu)",
     modeAvopaska: "Paskahousu (Avopeli)",
+    modeArabia: "Arabia (Arabialainen)",
+    tableCardsTitle: "Pöytäkortit",
+    swapHint: "💡 Voit vaihtaa kortteja kädestä pöytään ennen siirtoasi!",
     courtRule: "Seiskan sääntö (Kuvakortit)",
     court7: "Vain 7 tai suuremman päälle (Normaali)",
     court9: "Vain 9 tai suuremman päälle (Tiukka)",
@@ -81,6 +84,9 @@ const I18N = {
     gameMode: "Game Mode",
     modeValepaska: "Valepaskahousu (Bluffing / Face-down)",
     modeAvopaska: "Paskahousu (Open / Face-up)",
+    modeArabia: "Arabia (Palace / Shithead)",
+    tableCardsTitle: "Table Cards",
+    swapHint: "💡 You can swap cards between hand and table before your turn!",
     courtRule: "Court Card Rule (J, Q, K)",
     court7: "Only on 7+ (Standard)",
     court9: "Only on 9+ (Strict)",
@@ -135,6 +141,9 @@ class GameApp {
     this.isHost = false;
 
     this.selectedCardIndices = new Set();
+    this.selectedTableUpIndices = new Set();
+    this.selectedHandSwapIndex = null;
+    this.selectedTableSwapIndex = null;
     this.bluffDeclaredRank = '3';
     this.challengeInterval = null;
 
@@ -394,7 +403,7 @@ class GameApp {
 
     if (!this.musicPlayer) return;
 
-    // Load saved volume
+    // Load saved volume (default 0.35)
     const savedVol = localStorage.getItem('valepaska_music_vol');
     if (savedVol !== null) {
       this.musicPlayer.volume = parseFloat(savedVol);
@@ -411,16 +420,14 @@ class GameApp {
     };
 
     if (musicBtn) {
-      musicBtn.addEventListener('click', () => {
+      musicBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (this.musicPlayer.paused) {
           this.musicPlayer.play().then(() => {
             localStorage.setItem('valepaska_music_on', 'true');
             updateUI();
           }).catch(e => {
             console.warn('Musiikin toisto vaatii tiedoston static/music.mp3:', e);
-            alert((this.lang === 'fi')
-              ? 'Laita kappale kansioon: static/music.mp3 niin musiikki soi!'
-              : 'Place audio file in static/music.mp3 to play!');
           });
         } else {
           this.musicPlayer.pause();
@@ -436,16 +443,39 @@ class GameApp {
         this.musicPlayer.volume = val;
         localStorage.setItem('valepaska_music_vol', val.toString());
       });
+      volumeSlider.addEventListener('click', (e) => e.stopPropagation());
     }
 
-    // Auto-start on first user interaction if previously enabled
-    const autoStartOnInteraction = () => {
-      if (localStorage.getItem('valepaska_music_on') === 'true' && this.musicPlayer.paused) {
-        this.musicPlayer.play().then(updateUI).catch(() => {});
+    // Default to true: Lost in the Fire plays automatically!
+    const shouldPlay = localStorage.getItem('valepaska_music_on') !== 'false';
+
+    const tryAutoPlay = () => {
+      if (shouldPlay && this.musicPlayer.paused) {
+        const playPromise = this.musicPlayer.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            localStorage.setItem('valepaska_music_on', 'true');
+            updateUI();
+          }).catch(() => {
+            // Browser autoplay restricted: auto-start on very first interaction!
+            const onFirstGesture = () => {
+              if (localStorage.getItem('valepaska_music_on') !== 'false' && this.musicPlayer.paused) {
+                this.musicPlayer.play().then(() => {
+                  localStorage.setItem('valepaska_music_on', 'true');
+                  updateUI();
+                }).catch(() => {});
+              }
+            };
+            ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => {
+              window.addEventListener(evt, onFirstGesture, { once: true, capture: true });
+            });
+          });
+        }
       }
     };
-    window.addEventListener('click', autoStartOnInteraction, { once: true });
-    window.addEventListener('keydown', autoStartOnInteraction, { once: true });
+
+    // Attempt immediate playback on page open
+    tryAutoPlay();
 
     this.musicPlayer.addEventListener('play', updateUI);
     this.musicPlayer.addEventListener('pause', updateUI);
@@ -815,6 +845,28 @@ class GameApp {
         `;
       }
 
+      // In Arabia, render opponent's table cards
+      let oppTableHtml = '';
+      if (this.state.rules.mode === 'arabia') {
+        oppTableHtml = '<div class="opp-table-cards">';
+        for (let s = 0; s < 3; s++) {
+          const upCard = (p.table_up && p.table_up[s]) || null;
+          const hasDown = (p.table_down_count && s < p.table_down_count);
+          if (upCard || hasDown) {
+            oppTableHtml += `<div class="opp-table-slot">`;
+            if (hasDown) {
+              oppTableHtml += `<div class="opp-down-badge">🂠</div>`;
+            }
+            if (upCard) {
+              const cardEl = createCardElement(upCard);
+              oppTableHtml += cardEl.outerHTML;
+            }
+            oppTableHtml += `</div>`;
+          }
+        }
+        oppTableHtml += '</div>';
+      }
+
       seat.innerHTML = `
         <div class="opponent-avatar-box">
           ${p.avatar}
@@ -824,6 +876,7 @@ class GameApp {
         <div class="opponent-status-tag">
           ${p.is_out ? `🏆 #${p.finish_rank}` : (this.state.current_player_id === p.id ? (this.lang === 'fi' ? 'VUOROSSA' : 'TURN') : '')}
         </div>
+        ${oppTableHtml}
         ${speechHtml}
       `;
       oppArea.appendChild(seat);
@@ -939,12 +992,117 @@ class GameApp {
       revealOverlay.style.display = 'none';
     }
 
-    // 7. Render My Hand
+    // 7. Render Player's Table Cards (Arabia)
+    const tableCardsContainer = document.getElementById('playerTableCardsContainer');
+    const tableCardSlots = document.getElementById('tableCardSlots');
+    const swapHintTag = document.getElementById('swapHintTag');
+
+    if (this.state.rules.mode === 'arabia' && me) {
+      if (tableCardsContainer) tableCardsContainer.style.display = 'flex';
+      if (tableCardSlots) tableCardSlots.innerHTML = '';
+
+      const canSwap = !me.has_played_first_turn && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
+      if (swapHintTag) {
+        swapHintTag.style.display = canSwap ? 'inline-block' : 'none';
+      }
+
+      const isPhaseTableUp = (!me.hand || me.hand.length === 0) && this.state.draw_deck_count === 0 && (me.table_up && me.table_up.length > 0);
+      const isPhaseBlind = (!me.hand || me.hand.length === 0) && this.state.draw_deck_count === 0 && (!me.table_up || me.table_up.length === 0) && (me.table_down_count > 0);
+
+      for (let s = 0; s < 3; s++) {
+        const slotEl = document.createElement('div');
+        slotEl.className = 'table-card-slot';
+
+        const hasDown = (me.table_down_count && s < me.table_down_count);
+        const upCard = (me.table_up && me.table_up[s]) || null;
+
+        if (hasDown) {
+          const downWrap = document.createElement('div');
+          downWrap.className = 'table-slot-down';
+          const downCardEl = createCardElement(null, { faceDown: true });
+          downWrap.appendChild(downCardEl);
+          slotEl.appendChild(downWrap);
+
+          // If in blind phase and it's my turn, allow clicking blind card to flip it
+          if (isPhaseBlind && !upCard && isMyTurn) {
+            slotEl.classList.add('blind-active');
+            slotEl.title = this.lang === 'fi' ? 'Käännä sokkokortti pöytään!' : 'Flip blind card to pile!';
+            slotEl.addEventListener('click', () => {
+              window.sounds.playPop();
+              this.sendWS({
+                type: 'play_blind_card',
+                card_index: s
+              });
+            });
+          }
+        }
+
+        if (upCard) {
+          const upWrap = document.createElement('div');
+          upWrap.className = 'table-slot-up';
+          const isSelected = this.selectedTableUpIndices.has(s) || (this.selectedTableSwapIndex === s);
+          if (isSelected) upWrap.classList.add('selected');
+
+          const cardEl = createCardElement(upCard);
+          upWrap.appendChild(cardEl);
+          slotEl.appendChild(upWrap);
+
+          upWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            // Swapping with hand card before first play
+            if (canSwap) {
+              if (this.selectedHandSwapIndex !== null) {
+                this.sendWS({
+                  type: 'swap_table_card',
+                  hand_idx: this.selectedHandSwapIndex,
+                  table_idx: s
+                });
+                this.selectedHandSwapIndex = null;
+                this.selectedTableSwapIndex = null;
+                this.selectedCardIndices.clear();
+                window.sounds.playPop();
+                return;
+              } else {
+                this.selectedTableSwapIndex = (this.selectedTableSwapIndex === s) ? null : s;
+                window.sounds.playPop();
+                this.render();
+                return;
+              }
+            }
+
+            // Phase 2: Playing from table_up
+            if (isPhaseTableUp && isMyTurn) {
+              if (this.selectedTableUpIndices.has(s)) {
+                this.selectedTableUpIndices.delete(s);
+              } else {
+                if (this.selectedTableUpIndices.size > 0) {
+                  const firstIdx = Array.from(this.selectedTableUpIndices)[0];
+                  const firstRank = me.table_up[firstIdx].rank;
+                  if (upCard.rank !== firstRank) {
+                    this.selectedTableUpIndices.clear();
+                  }
+                }
+                this.selectedTableUpIndices.add(s);
+              }
+              window.sounds.playPop();
+              this.render();
+            }
+          });
+        }
+
+        if (tableCardSlots) tableCardSlots.appendChild(slotEl);
+      }
+    } else {
+      if (tableCardsContainer) tableCardsContainer.style.display = 'none';
+    }
+
+    // 8. Render My Hand
     const handContainer = document.getElementById('handCardsContainer');
     handContainer.innerHTML = '';
     if (me && me.hand) {
       me.hand.forEach((card, idx) => {
-        const isSelected = this.selectedCardIndices.has(idx);
+        const isSelected = this.selectedCardIndices.has(idx) || (this.selectedHandSwapIndex === idx);
         const cardEl = createCardElement(card, {
           selected: isSelected
         });
@@ -953,12 +1111,43 @@ class GameApp {
         cardEl.style.zIndex = idx + 10;
 
         cardEl.addEventListener('click', () => {
+          const canSwap = this.state.rules.mode === 'arabia' && me && !me.has_played_first_turn && me.table_up && me.table_up.length > 0;
+          if (canSwap && this.selectedTableSwapIndex !== null) {
+            this.sendWS({
+              type: 'swap_table_card',
+              hand_idx: idx,
+              table_idx: this.selectedTableSwapIndex
+            });
+            this.selectedTableSwapIndex = null;
+            this.selectedHandSwapIndex = null;
+            this.selectedCardIndices.clear();
+            window.sounds.playPop();
+            return;
+          }
+
+          if (canSwap && !isMyTurn) {
+            this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
+            this.selectedCardIndices.clear();
+            if (this.selectedHandSwapIndex !== null) {
+              this.selectedCardIndices.add(idx);
+            }
+            window.sounds.playPop();
+            this.render();
+            return;
+          }
+
           if (!isMyTurn) return;
+
+          if (canSwap) {
+            this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
+          }
+
           if (this.selectedCardIndices.has(idx)) {
             this.selectedCardIndices.delete(idx);
+            if (this.selectedHandSwapIndex === idx) this.selectedHandSwapIndex = null;
           } else {
-            // In open Paskahousu, cards played together must share the same rank
-            if (this.state.rules.mode === 'paskahousu' && this.selectedCardIndices.size > 0) {
+            // In open Paskahousu & Arabia, cards played together must share the same rank
+            if ((this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') && this.selectedCardIndices.size > 0) {
               const firstIdx = Array.from(this.selectedCardIndices)[0];
               const firstRank = me.hand[firstIdx].rank;
               if (card.rank !== firstRank) {
@@ -979,22 +1168,27 @@ class GameApp {
     const leaveBtn = document.getElementById('leaveGameBtn');
     if (leaveBtn) leaveBtn.style.display = 'flex';
 
-    // 8. Update Action Buttons
+    // 9. Update Action Buttons
     const playBtn = document.getElementById('playCardsBtn');
     const playBtnText = document.getElementById('playCardsBtnText');
     const flipBtn = document.getElementById('flipDeckBtn');
     const pickupBtn = document.getElementById('pickupPileBtn');
 
-    playBtn.disabled = !isMyTurn || this.selectedCardIndices.size === 0;
+    const hasTableUpSelected = this.selectedTableUpIndices.size > 0;
+    const hasHandSelected = this.selectedCardIndices.size > 0;
+    const isBlindPhase = (this.state.rules.mode === 'arabia' && me && (!me.hand || me.hand.length === 0) && this.state.draw_deck_count === 0 && (!me.table_up || me.table_up.length === 0) && (me.table_down_count > 0));
+
+    playBtn.disabled = !isMyTurn || (!hasHandSelected && !hasTableUpSelected);
+    const selectedCount = hasTableUpSelected ? this.selectedTableUpIndices.size : this.selectedCardIndices.size;
     const baseText = this.t('playCards');
-    const label = this.selectedCardIndices.size > 0 ? `${baseText} (${this.selectedCardIndices.size})` : baseText;
+    const label = selectedCount > 0 ? `${baseText} (${selectedCount})` : (isBlindPhase ? (this.lang === 'fi' ? 'Käännä sokkokortti 👆' : 'Flip blind card 👆') : baseText);
     if (playBtnText) {
       playBtnText.textContent = label;
     } else {
       playBtn.textContent = label;
     }
 
-    flipBtn.disabled = !isMyTurn || this.state.draw_deck_count === 0;
+    flipBtn.disabled = !isMyTurn || this.state.draw_deck_count === 0 || hasTableUpSelected;
     pickupBtn.disabled = !isMyTurn || this.state.play_pile.length === 0;
 
     // Turn indicator in bottom area
@@ -1033,16 +1227,26 @@ class GameApp {
   }
 
   handlePlayClick() {
-    if (this.selectedCardIndices.size === 0) return;
     const me = this.state.players.find(p => p.id === this.playerId);
-    if (!me || !me.hand) return;
+    if (!me) return;
+
+    if (this.selectedTableUpIndices.size > 0) {
+      if (!me.table_up) return;
+      const selectedCards = Array.from(this.selectedTableUpIndices).map(i => me.table_up[i]);
+      const declaredRank = selectedCards[0].rank;
+      this.executePlayCards(declaredRank, 'table_up');
+      return;
+    }
+
+    if (this.selectedCardIndices.size === 0) return;
+    if (!me.hand) return;
 
     const selectedCards = Array.from(this.selectedCardIndices).map(i => me.hand[i]);
 
-    if (this.state.rules.mode === 'paskahousu') {
-      // In Open Paskahousu, declared rank is the actual rank of the cards
+    if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
+      // In Open Paskahousu and Arabia, declared rank is the actual rank of the cards
       const declaredRank = selectedCards[0].rank;
-      this.executePlayCards(declaredRank);
+      this.executePlayCards(declaredRank, 'hand');
     } else {
       // In Valepaskahousu, open the Bluff Declaration Modal!
       this.openBluffModal(selectedCards);
@@ -1065,14 +1269,21 @@ class GameApp {
     document.getElementById('bluffModalQty').textContent = `${selectedCards.length}x`;
   }
 
-  executePlayCards(declaredRank) {
-    const indices = Array.from(this.selectedCardIndices);
-    this.selectedCardIndices.clear();
+  executePlayCards(declaredRank, source = 'hand') {
+    let indices;
+    if (source === 'table_up') {
+      indices = Array.from(this.selectedTableUpIndices);
+      this.selectedTableUpIndices.clear();
+    } else {
+      indices = Array.from(this.selectedCardIndices);
+      this.selectedCardIndices.clear();
+    }
 
     this.sendWS({
       type: 'play_cards',
       card_indices: indices,
-      declared_rank: declaredRank
+      declared_rank: declaredRank,
+      source: source
     });
   }
 

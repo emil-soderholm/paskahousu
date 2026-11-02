@@ -189,12 +189,31 @@ async def handle_websocket_session(ws: WebSocketConnection):
             elif msg_type == "play_cards":
                 card_indices = data.get("card_indices", [])
                 declared_rank = data.get("declared_rank", "")
-                res = current_room.game.play_cards(player_id, card_indices, declared_rank)
+                source = data.get("source", "hand")
+                res = current_room.game.play_cards(player_id, card_indices, declared_rank, source=source)
                 if not res.get("success"):
                     await ws.send_json({"type": "error", "message": res.get("error", "Virhe")})
                 else:
                     await current_room.broadcast_state()
                     current_room.check_next_turn()
+
+            elif msg_type == "play_blind_card":
+                card_index = data.get("card_index", 0)
+                res = current_room.game.play_blind_card(player_id, card_index)
+                if not res.get("success"):
+                    await ws.send_json({"type": "error", "message": res.get("error", "Virhe")})
+                else:
+                    await current_room.broadcast_state()
+                    current_room.check_next_turn()
+
+            elif msg_type == "swap_table_card":
+                hand_idx = data.get("hand_idx", 0)
+                table_idx = data.get("table_idx", 0)
+                res = current_room.game.swap_table_card(player_id, hand_idx, table_idx)
+                if not res.get("success"):
+                    await ws.send_json({"type": "error", "message": res.get("error", "Virhe")})
+                else:
+                    await current_room.broadcast_state()
 
             elif msg_type == "challenge":
                 res = current_room.game.challenge_move(player_id)

@@ -67,7 +67,7 @@ def create_deck() -> List[Card]:
 class GameRules:
     def __init__(
         self,
-        mode: str = "valepaskahousu",       # "valepaskahousu" or "paskahousu"
+        mode: str = "valepaskahousu",       # "valepaskahousu", "paskahousu", or "arabia"
         court_min_rank: int = 7,             # 7 means J,Q,K can only be played on 7+ (or empty table). 0 = no restriction, 9 = 9+
         two_rule: str = "only_two",          # "only_two" (only 2 on 2) or "reset" (2 clears or allows any card next)
         empty_ten_ace: str = "next_pickup",  # "next_pickup" (traditional: 10/A on empty table forces next to pick up), or "forbidden"
@@ -75,11 +75,17 @@ class GameRules:
         hand_size: int = 5                   # Cards held while draw deck has cards
     ):
         self.mode = mode
-        self.court_min_rank = court_min_rank
-        self.two_rule = two_rule
-        self.empty_ten_ace = empty_ten_ace
+        if mode == "arabia":
+            self.hand_size = 3
+            self.two_rule = "reset"
+            self.court_min_rank = 0
+            self.empty_ten_ace = "normal"
+        else:
+            self.hand_size = hand_size
+            self.two_rule = two_rule
+            self.court_min_rank = court_min_rank
+            self.empty_ten_ace = empty_ten_ace
         self.challenge_seconds = challenge_seconds
-        self.hand_size = hand_size
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -93,13 +99,17 @@ class GameRules:
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> 'GameRules':
+        mode = d.get("mode", "valepaskahousu")
+        default_hand_size = 3 if mode == "arabia" else 5
+        default_two_rule = "reset" if mode == "arabia" else "only_two"
+        default_court = 0 if mode == "arabia" else 7
         return cls(
-            mode=d.get("mode", "valepaskahousu"),
-            court_min_rank=int(d.get("court_min_rank", 7)),
-            two_rule=d.get("two_rule", "only_two"),
-            empty_ten_ace=d.get("empty_ten_ace", "next_pickup"),
+            mode=mode,
+            court_min_rank=int(d.get("court_min_rank", default_court)),
+            two_rule=d.get("two_rule", default_two_rule),
+            empty_ten_ace=d.get("empty_ten_ace", "normal" if mode == "arabia" else "next_pickup"),
             challenge_seconds=int(d.get("challenge_seconds", 8)),
-            hand_size=int(d.get("hand_size", 5))
+            hand_size=int(d.get("hand_size", default_hand_size))
         )
 
 
@@ -136,6 +146,9 @@ class Player:
         self.is_bot = is_bot
         self.avatar = avatar
         self.hand: List[Card] = []
+        self.table_down: List[Card] = []  # Arabia: 3 blind face-down cards
+        self.table_up: List[Card] = []    # Arabia: 3 open face-up cards
+        self.has_played_first_turn: bool = False
         self.is_out: bool = False
         self.finish_rank: Optional[int] = None
         self.is_ready: bool = False
@@ -163,6 +176,9 @@ class Player:
             "avatar": self.avatar,
             "card_count": len(self.hand),
             "hand": [c.to_dict() for c in self.hand] if include_hand else None,
+            "table_down_count": len(self.table_down),
+            "table_up": [c.to_dict() for c in self.table_up],
+            "has_played_first_turn": self.has_played_first_turn,
             "is_out": self.is_out,
             "finish_rank": self.finish_rank,
             "is_ready": self.is_ready,
@@ -259,18 +275,41 @@ class GameState:
         # Reset players
         for p in self.players:
             p.hand = []
+            p.table_down = []
+            p.table_up = []
+            p.has_played_first_turn = False
             p.is_out = False
             p.finish_rank = None
             p.stats = {k: 0 for k in p.stats}
 
-        # Deal cards (default 5 cards each)
-        for _ in range(self.rules.hand_size):
-            for p in self.players:
-                if self.draw_deck:
-                    p.hand.append(self.draw_deck.pop())
+        if self.rules.mode == "arabia":
+            # Arabia setup: 3 face-down, 3 face-up, 3 in hand
+            for _ in range(3):
+                for p in self.players:
+                    if self.draw_deck:
+                        p.table_down.append(self.draw_deck.pop())
+            for _ in range(3):
+                for p in self.players:
+                    if self.draw_deck:
+                        p.table_up.append(self.draw_deck.pop())
+            for _ in range(3):
+                for p in self.players:
+                    if self.draw_deck:
+                        p.hand.append(self.draw_deck.pop())
 
-        for p in self.players:
-            p.sort_hand()
+            for p in self.players:
+                p.sort_hand()
+                if p.is_bot:
+                    self._bot_optimize_table_cards(p)
+        else:
+            # Deal cards (default 5 cards each)
+            for _ in range(self.rules.hand_size):
+                for p in self.players:
+                    if self.draw_deck:
+                        p.hand.append(self.draw_deck.pop())
+
+            for p in self.players:
+                p.sort_hand()
 
         # Starting player: the player with the lowest card (normally smallest 3, or smallest card)
         best_p_idx = 0
@@ -285,7 +324,13 @@ class GameState:
         starter = self.players[self.current_player_idx]
         self.status = "PLAYING"
 
-        mode_name = "Valepaskahousu" if self.rules.mode == "valepaskahousu" else "Paskahousu"
+        if self.rules.mode == "arabia":
+            mode_name = "Arabia"
+        elif self.rules.mode == "valepaskahousu":
+            mode_name = "Valepaskahousu"
+        else:
+            mode_name = "Paskahousu"
+
         self.add_log(
             f"Peli alkoi ({mode_name})! {starter.name} aloittaa pienimmällä kortilla.",
             f"Game started ({mode_name})! {starter.name} starts with the lowest card.",
@@ -293,16 +338,59 @@ class GameState:
         )
         return True
 
+    def _bot_optimize_table_cards(self, bot: Player):
+        """Bots optimize their Arabia table_up cards by placing highest/action cards in table_up."""
+        all_cards = bot.hand + bot.table_up
+
+        def desirability(c: Card) -> int:
+            if c.rank == '10':
+                return 100  # 10 clears pile
+            if c.rank == '2':
+                return 90   # 2 resets pile
+            if c.rank == 'A':
+                return 80
+            return c.value  # 3..K (3 to 13)
+
+        all_cards.sort(key=desirability, reverse=True)
+        bot.table_up = all_cards[:3]
+        bot.hand = all_cards[3:]
+        bot.sort_hand()
+
+    def swap_table_card(self, player_id: str, hand_idx: int, table_up_idx: int) -> Dict[str, Any]:
+        """Allows player to swap a card between hand and table_up before their first play."""
+        if self.rules.mode != "arabia":
+            return {"success": False, "error": "Korttien vaihto on käytössä vain Arabiassa / Swapping cards is only in Arabia"}
+        player = self.get_player(player_id)
+        if not player or player.is_out:
+            return {"success": False, "error": "Pelaajaa ei löydy / Player not found"}
+        if player.has_played_first_turn:
+            return {"success": False, "error": "Et voi enää vaihtaa kortteja ensimmäisen siirtosi jälkeen / Cannot swap after making first play"}
+        if hand_idx < 0 or hand_idx >= len(player.hand):
+            return {"success": False, "error": "Virheellinen käsikortti / Invalid hand card"}
+        if table_up_idx < 0 or table_up_idx >= len(player.table_up):
+            return {"success": False, "error": "Virheellinen pöytäkortti / Invalid table card"}
+
+        player.hand[hand_idx], player.table_up[table_up_idx] = player.table_up[table_up_idx], player.hand[hand_idx]
+        player.sort_hand()
+
+        self.add_log(
+            f"{player.name} vaihtoi kortin kädestään pöydälle.",
+            f"{player.name} swapped a card between hand and table.",
+            "swap"
+        )
+        return {"success": True}
+
     def validate_play(
         self,
         player_id: str,
         card_indices: List[int],
-        declared_rank: str
+        declared_rank: str,
+        source: str = "hand"
     ) -> Tuple[bool, str]:
         """
         Validates whether the player can play the specified cards and declaration.
         In Valepaskahousu, actual cards can be anything, but the declared_rank must be legal.
-        In open Paskahousu, actual cards must all equal declared_rank, and declared_rank must be legal.
+        In open Paskahousu and Arabia, actual cards must all equal declared_rank, and declared_rank must be legal.
         """
         if self.status != "PLAYING":
             return False, "Peli ei ole normaalissa vuorossa / Game not in normal turn phase"
@@ -317,18 +405,32 @@ class GameState:
         if not card_indices:
             return False, "Valitse vähintään yksi kortti / Select at least one card"
 
-        if any(idx < 0 or idx >= len(player.hand) for idx in card_indices):
-            return False, "Virheellinen korttivalinta / Invalid card selection"
+        if source == "hand":
+            if not player.hand:
+                return False, "Kädessäsi ei ole kortteja / Hand is empty"
+            if any(idx < 0 or idx >= len(player.hand) for idx in card_indices):
+                return False, "Virheellinen korttivalinta / Invalid card selection"
+            selected_cards = [player.hand[i] for i in card_indices]
+        elif source == "table_up":
+            if self.rules.mode != "arabia":
+                return False, "Pöytäkortit ovat käytössä vain Arabiassa / Table cards only in Arabia"
+            if len(player.hand) > 0 or len(self.draw_deck) > 0:
+                return False, "Käsikortit ja pakka on pelattava ensin! / Hand and deck must be empty first!"
+            if not player.table_up:
+                return False, "Ei pöytäkortteja jäljellä / No table cards left"
+            if any(idx < 0 or idx >= len(player.table_up) for idx in card_indices):
+                return False, "Virheellinen pöytäkorttivalinta / Invalid table card selection"
+            selected_cards = [player.table_up[i] for i in card_indices]
+        else:
+            return False, "Virheellinen korttilähde / Invalid source"
 
-        selected_cards = [player.hand[i] for i in card_indices]
-
-        # In open Paskahousu, all selected cards must have the same rank as declared_rank
-        if self.rules.mode == "paskahousu":
+        # In open Paskahousu and Arabia, all selected cards must have the same rank as declared_rank
+        if self.rules.mode in ["paskahousu", "arabia"]:
             first_rank = selected_cards[0].rank
             if any(c.rank != first_rank for c in selected_cards):
                 return False, "Kaikkien pelattujen korttien on oltava samaa maata/arvoa / All played cards must have same rank"
             if declared_rank != first_rank:
-                return False, "Avopaskahousussa ei voi valehdella / Cannot bluff in open Paskahousu"
+                return False, "Tässä pelimuodossa ei voi valehdella / Cannot bluff in this mode"
 
         # Check declared rank legality against pile
         top_entry = self.get_top_pile_card()
@@ -336,8 +438,8 @@ class GameState:
         if not legal:
             return False, reason
 
-        # Check empty table rule for 10 and Ace
-        if top_entry is None:
+        # Check empty table rule for 10 and Ace (only in standard Paskahousu/Valepaskahousu)
+        if top_entry is None and self.rules.mode != "arabia":
             if self.rules.empty_ten_ace == "forbidden" and declared_rank in ['10', 'A']:
                 return False, "Kymppiä tai Ässää ei voi lyödä tyhjään pöytään / 10 or Ace cannot be led to empty table"
 
@@ -346,11 +448,30 @@ class GameState:
     def is_rank_legal_on_pile(self, rank: str, top_entry: Optional[PlayedCardEntry]) -> Tuple[bool, str]:
         """Checks if declared rank can legally be played on the current pile."""
         if top_entry is None:
-            # Empty table: any card can be played (except if forbidden 10/A rule applies)
+            # Empty table: any card can be played
             return True, "OK"
 
         top_rank = top_entry.declared_rank
 
+        # Arabia specific rules
+        if self.rules.mode == "arabia":
+            # 2 can be played on ANY card
+            if rank == '2':
+                return True, "OK"
+            # Any card can be played on 2 (2 resets the pile)
+            if top_rank == '2':
+                return True, "OK"
+            # 10 can be played on ANY card (and clears the pile)
+            if rank == '10':
+                return True, "OK"
+            # Standard comparison: rank >= top_rank
+            top_val = RANK_VALUES[top_rank]
+            cur_val = RANK_VALUES[rank]
+            if cur_val < top_val:
+                return False, f"Kortin arvon on oltava vähintään yhtä suuri kuin {top_rank}! / Card must be >= {top_rank}!"
+            return True, "OK"
+
+        # Standard Paskahousu & Valepaskahousu rules:
         # Rule of 2 (Kakkonen):
         if top_rank == '2':
             if self.rules.two_rule == "only_two":
@@ -394,7 +515,6 @@ class GameState:
                     return False, f"Kuvakortteja saa lyödä vasta {self.rules.court_min_rank}:n päälle! / Court cards require {self.rules.court_min_rank}+!"
 
         # Standard number/court rank comparison: must be >= top_rank
-        # (Note: 10 has already been handled, 2 has been handled, Ace has been handled)
         top_val = RANK_VALUES[top_rank]
         cur_val = RANK_VALUES[rank]
 
@@ -410,6 +530,21 @@ class GameState:
     def will_move_clear_pile(self, declared_rank: str, cards_count: int) -> bool:
         """Determines if this declaration triggers a Kaato (pile clear)."""
         top_entry = self.get_top_pile_card()
+
+        if self.rules.mode == "arabia":
+            # In Arabia, 10 always clears the pile
+            if declared_rank == '10':
+                return True
+            # 4 of a kind clears the pile
+            consecutive_same = cards_count
+            for entry in reversed(self.play_pile):
+                if entry.declared_rank == declared_rank:
+                    consecutive_same += 1
+                else:
+                    break
+            if consecutive_same >= 4:
+                return True
+            return False
 
         # 10 clears number cards (3-9)
         if declared_rank == '10':
@@ -437,19 +572,25 @@ class GameState:
         self,
         player_id: str,
         card_indices: List[int],
-        declared_rank: str
+        declared_rank: str,
+        source: str = "hand"
     ) -> Dict[str, Any]:
         """
-        Executes a card play action.
+        Executes a card play action from hand or table_up.
         """
-        valid, msg = self.validate_play(player_id, card_indices, declared_rank)
+        valid, msg = self.validate_play(player_id, card_indices, declared_rank, source=source)
         if not valid:
             return {"success": False, "error": msg}
 
         player = self.get_player(player_id)
+        player.has_played_first_turn = True
+
         # Extract cards in reverse index order so indices stay valid
         sorted_indices = sorted(card_indices, reverse=True)
-        played_cards = [player.hand.pop(i) for i in sorted_indices]
+        if source == "table_up":
+            played_cards = [player.table_up.pop(i) for i in sorted_indices]
+        else:
+            played_cards = [player.hand.pop(i) for i in sorted_indices]
 
         # Check if player actually lied
         is_bluff = any(c.rank != declared_rank for c in played_cards)
@@ -498,7 +639,7 @@ class GameState:
             return {"success": True, "status": "challenge_pending"}
 
         else:
-            # Open Paskahousu: immediate resolution
+            # Open Paskahousu and Arabia: immediate resolution
             for c in played_cards:
                 self.play_pile.append(PlayedCardEntry(
                     card=c,
@@ -507,15 +648,17 @@ class GameState:
                     face_down=False
                 ))
 
+            source_txt = " pöydästä" if source == "table_up" else ""
+            source_txt_en = " from table" if source == "table_up" else ""
             qty_str = f"{len(played_cards)}x {declared_rank}"
             self.add_log(
-                f"{player.name} löi {qty_str}.",
-                f"{player.name} played {qty_str}.",
+                f"{player.name} löi{source_txt} {qty_str}.",
+                f"{player.name} played{source_txt_en} {qty_str}.",
                 "play"
             )
 
-            # Check empty table 10/Ace pickup rule
-            if top_before is None and declared_rank in ['10', 'A'] and self.rules.empty_ten_ace == "next_pickup":
+            # Check empty table 10/Ace pickup rule (not in Arabia)
+            if self.rules.mode != "arabia" and top_before is None and declared_rank in ['10', 'A'] and self.rules.empty_ten_ace == "next_pickup":
                 self._handle_empty_table_pickup(player)
                 return {"success": True, "cleared": False, "pickup": True}
 
@@ -525,10 +668,85 @@ class GameState:
                 return {"success": True, "cleared": True}
 
             # Hand refill and advance turn
-            self._refill_hand(player)
+            if source == "hand":
+                self._refill_hand(player)
             self._check_player_out(player)
             self._advance_turn()
             return {"success": True, "cleared": False}
+
+    def play_blind_card(self, player_id: str, card_index: int = 0) -> Dict[str, Any]:
+        """
+        In Arabia, play a blind face-down card from table_down.
+        Only allowed when hand, draw deck, and table_up are all empty.
+        """
+        if self.rules.mode != "arabia":
+            return {"success": False, "error": "Sokkokortit ovat käytössä vain Arabiassa / Blind cards only in Arabia"}
+
+        if self.status != "PLAYING":
+            return {"success": False, "error": "Peli ei ole normaalissa vuorossa / Game not in normal turn"}
+
+        player = self.get_player(player_id)
+        if not player or player != self.current_player():
+            return {"success": False, "error": "Ei sinun vuorosi / Not your turn"}
+
+        if len(player.hand) > 0 or len(self.draw_deck) > 0:
+            return {"success": False, "error": "Käsikortit ja pakka on pelattava ensin! / Hand and deck must be empty first!"}
+
+        if len(player.table_up) > 0:
+            return {"success": False, "error": "Pöytäkortit on pelattava ensin! / Table-up cards must be empty first!"}
+
+        if not player.table_down:
+            return {"success": False, "error": "Ei sokkokortteja jäljellä! / No blind cards left!"}
+
+        if card_index < 0 or card_index >= len(player.table_down):
+            card_index = 0
+
+        card = player.table_down.pop(card_index)
+        player.has_played_first_turn = True
+
+        top_entry = self.get_top_pile_card()
+        legal, _ = self.is_rank_legal_on_pile(card.rank, top_entry)
+
+        if legal:
+            # Legal! Card is played to pile face up
+            self.play_pile.append(PlayedCardEntry(
+                card=card,
+                declared_rank=card.rank,
+                player_id=player_id,
+                face_down=False
+            ))
+
+            self.add_log(
+                f"{player.name} käänsi sokkona pöydästä {card.rank}{card.suit} ja se sopi pöytään!",
+                f"{player.name} flipped blind card {card.rank}{card.suit} and it fit the pile!",
+                "flip_success"
+            )
+
+            clears = self.will_move_clear_pile(card.rank, 1)
+            if clears:
+                self._clear_pile_kaatuu(player)
+                return {"success": True, "legal": True, "card": card.to_dict(), "cleared": True}
+
+            self._check_player_out(player)
+            self._advance_turn()
+            return {"success": True, "legal": True, "card": card.to_dict(), "cleared": False}
+
+        else:
+            # Not legal! Player picks up the pile plus this card
+            pickup_cards = [entry.card for entry in self.play_pile] + [card]
+            player.hand.extend(pickup_cards)
+            player.sort_hand()
+            player.stats["cards_picked_up"] += len(pickup_cards)
+            self.play_pile = []
+
+            self.add_log(
+                f"{player.name} käänsi sokkona pöydästä {card.rank}{card.suit}, ei sopinut! {player.name} joutuu nostamaan pakan ({len(pickup_cards)} kpl)!",
+                f"{player.name} flipped blind card {card.rank}{card.suit}, did not fit! {player.name} picks up pile ({len(pickup_cards)} cards)!",
+                "flip_fail"
+            )
+
+            self._advance_turn()
+            return {"success": True, "legal": False, "card": card.to_dict(), "picked_up": len(pickup_cards)}
 
     def _handle_empty_table_pickup(self, player: Player):
         """When 10 or Ace is played on empty table, next player picks it up."""
@@ -856,8 +1074,21 @@ class GameState:
         player.sort_hand()
 
     def _check_player_out(self, player: Player):
-        """Check if player has emptied their hand and draw deck is empty."""
-        if len(player.hand) == 0 and len(self.draw_deck) == 0 and not player.is_out:
+        """Check if player has emptied all their cards."""
+        if self.rules.mode == "arabia":
+            has_no_cards = (
+                len(player.hand) == 0 and
+                len(player.table_up) == 0 and
+                len(player.table_down) == 0 and
+                len(self.draw_deck) == 0
+            )
+        else:
+            has_no_cards = (
+                len(player.hand) == 0 and
+                len(self.draw_deck) == 0
+            )
+
+        if has_no_cards and not player.is_out:
             player.is_out = True
             self.winners.append(player.id)
             player.finish_rank = len(self.winners)

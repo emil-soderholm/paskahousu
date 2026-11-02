@@ -207,6 +207,9 @@ class Room:
         self.game.last_action_info = None
         for p in self.game.players:
             p.hand = []
+            p.table_down = []
+            p.table_up = []
+            p.has_played_first_turn = False
             p.is_out = False
             p.finish_rank = None
         await self.broadcast_state()
@@ -320,7 +323,14 @@ class Room:
 
             move = BotAI.choose_move(self.game, curr)
             if move["action"] == "play":
-                self.game.play_cards(curr.id, move["card_indices"], move["declared_rank"])
+                self.game.play_cards(
+                    curr.id,
+                    move["card_indices"],
+                    move["declared_rank"],
+                    source=move.get("source", "hand")
+                )
+            elif move["action"] == "play_blind":
+                self.game.play_blind_card(curr.id, move.get("card_index", 0))
             elif move["action"] == "flip_deck":
                 self.game.flip_from_deck(curr.id)
             elif move["action"] == "pickup":
