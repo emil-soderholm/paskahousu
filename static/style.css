@@ -63,6 +63,24 @@ body {
   gap: 8px;
 }
 
+.clickable-logo {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-radius: 8px;
+}
+
+.clickable-logo:hover {
+  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.clickable-logo:active {
+  transform: scale(0.97);
+}
+
 .logo-icon {
   font-size: 22px;
 }
@@ -957,38 +975,46 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 6px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  margin-bottom: 10px;
+  background: rgba(11, 15, 20, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 8px 16px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   z-index: 35;
+  max-width: 95%;
 }
 
 .table-cards-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: center;
+}
+
+.table-cards-title {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   color: var(--text-muted);
-  margin-bottom: 6px;
 }
 
 .swap-hint-tag {
-  background: rgba(245, 197, 24, 0.2);
+  background: rgba(245, 197, 24, 0.15);
   color: var(--gold);
   border: 1px solid rgba(245, 197, 24, 0.4);
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 3px 10px;
+  border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
   animation: pulseMusic 2s infinite ease-in-out;
+  line-height: 1.3;
 }
 
 .table-card-slots {
@@ -1002,9 +1028,9 @@ body {
   position: relative;
   width: 58px;
   height: 84px;
-  border-radius: 6px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1037,7 +1063,7 @@ body {
 
 .table-card-slot .table-slot-up {
   position: absolute;
-  top: 6px;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
@@ -1047,12 +1073,12 @@ body {
 }
 
 .table-card-slot .table-slot-up:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   z-index: 10;
 }
 
 .table-card-slot .table-slot-up.selected {
-  transform: translateY(-14px);
+  transform: translateY(-10px);
   box-shadow: 0 0 14px var(--gold-glow);
   border: 2px solid var(--gold);
   border-radius: var(--card-radius);
@@ -1075,41 +1101,116 @@ body {
   box-shadow: 0 0 16px var(--gold-glow);
 }
 
-/* Opponent table cards */
+/* ARABIA: Opponent Table Cards Section */
+.opp-table-cards-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.opp-table-cards-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
 .opp-table-cards {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 5px;
   justify-content: center;
+  align-items: center;
 }
 
 .opp-table-slot {
   position: relative;
-  width: 24px;
-  height: 34px;
-  border-radius: 4px;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
+  width: 32px;
+  height: 46px;
+  flex-shrink: 0;
 }
 
-.opp-table-slot .playing-card {
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
-  font-size: 8px !important;
-  box-shadow: none !important;
+@media (min-width: 768px) {
+  .opp-table-slot {
+    width: 36px;
+    height: 52px;
+  }
 }
 
-.opp-table-slot .opp-down-badge {
+.opp-down-layer {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #000;
-  border: 1px solid var(--text-muted);
-  color: #fff;
-  font-size: 8px;
-  border-radius: 6px;
-  padding: 0 3px;
-  z-index: 5;
+  top: 3px;
+  left: 3px;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  background: #1e3a8a;
+  border: 1px solid #60a5fa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.opp-mini-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 5px;
+  border: 1.5px solid #1e293b;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 2px;
+  user-select: none;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.opp-mini-card.suit-red {
+  color: #dc2626;
+}
+
+.opp-mini-card.suit-black {
+  color: #0f172a;
+}
+
+.opp-mini-rank {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .opp-mini-rank {
+    font-size: 16px;
+  }
+}
+
+.opp-mini-suit {
+  font-size: 13px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+@media (min-width: 768px) {
+  .opp-mini-suit {
+    font-size: 15px;
+  }
+}
+
+.opp-mini-card-back {
+  background: #1e3a8a;
+  color: #93c5fd;
+  border: 1.5px solid #3b82f6;
+  font-size: 18px;
 }
 
 /* PLAYING CARD STYLES */

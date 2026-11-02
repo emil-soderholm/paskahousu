@@ -223,6 +223,7 @@ class GameState:
         self.winners: List[str] = []
         self.paskahousu_id: Optional[str] = None
         self.turn_number: int = 0
+        self.first_kaato_done: bool = False
 
     def add_log(self, text_fi: str, text_en: str, log_type: str = "info"):
         entry = {
@@ -271,6 +272,7 @@ class GameState:
         self.reveal_info = None
         self.last_action_info = None
         self.turn_number = 1
+        self.first_kaato_done = False
 
         # Reset players
         for p in self.players:
@@ -363,8 +365,8 @@ class GameState:
         player = self.get_player(player_id)
         if not player or player.is_out:
             return {"success": False, "error": "Pelaajaa ei löydy / Player not found"}
-        if player.has_played_first_turn:
-            return {"success": False, "error": "Et voi enää vaihtaa kortteja ensimmäisen siirtosi jälkeen / Cannot swap after making first play"}
+        if self.first_kaato_done:
+            return {"success": False, "error": "Kortteja ei voi enää vaihtaa ensimmäisen kaadon jälkeen! / Cannot swap cards after first pile clear!"}
         if hand_idx < 0 or hand_idx >= len(player.hand):
             return {"success": False, "error": "Virheellinen käsikortti / Invalid hand card"}
         if table_up_idx < 0 or table_up_idx >= len(player.table_up):
@@ -806,6 +808,7 @@ class GameState:
 
     def _clear_pile_kaatuu(self, player: Player):
         """Pile clears (Kaatuu) to dead pile. The player plays again!"""
+        self.first_kaato_done = True
         cleared_count = len(self.play_pile)
         self.dead_pile_count += cleared_count
         self.play_pile = []
@@ -972,6 +975,7 @@ class GameState:
 
         # Check Kaato (pile clears)
         if cs.clears_on_pass:
+            self.first_kaato_done = True
             cleared_count = len(self.play_pile)
             self.dead_pile_count += cleared_count
             self.play_pile = []
@@ -1216,5 +1220,6 @@ class GameState:
             "history": self.history[-25:],
             "winners": self.winners,
             "paskahousu_id": self.paskahousu_id,
-            "turn_number": self.turn_number
+            "turn_number": self.turn_number,
+            "first_kaato_done": self.first_kaato_done
         }

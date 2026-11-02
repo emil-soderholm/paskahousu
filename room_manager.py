@@ -205,6 +205,7 @@ class Room:
         self.game.challenge_state = None
         self.game.reveal_info = None
         self.game.last_action_info = None
+        self.game.first_kaato_done = False
         for p in self.game.players:
             p.hand = []
             p.table_down = []

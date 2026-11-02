@@ -6,7 +6,7 @@
 // Multi-language strings (Finnish & English)
 const I18N = {
   fi: {
-    appTitle: "Tuutan ja Emailin korttihuane",
+    appTitle: "Tuutan ja Emailin pelihuane",
     tagline: "Perinteinen suomalainen korttipeli",
     createRoom: "Luo uusi pelihuone",
     joinRoom: "Liity koodilla",
@@ -25,7 +25,7 @@ const I18N = {
     modeAvopaska: "Paskahousu (Avopeli)",
     modeArabia: "Arabia (Arabialainen)",
     tableCardsTitle: "Pöytäkortit",
-    swapHint: "💡 Voit vaihtaa kortteja kädestä pöytään ennen siirtoasi!",
+    swapHint: "💡 Vaihto sallittu 1. kaatoon asti",
     courtRule: "Seiskan sääntö (Kuvakortit)",
     court7: "Vain 7 tai suuremman päälle (Normaali)",
     court9: "Vain 9 tai suuremman päälle (Tiukka)",
@@ -67,7 +67,7 @@ const I18N = {
     confirmLeave: "Kyllä, poistu"
   },
   en: {
-    appTitle: "Tuutan ja Emailin korttihuane",
+    appTitle: "Tuutan ja Emailin pelihuane",
     tagline: "Classic Finnish Bluffing Card Game",
     createRoom: "Create Game Room",
     joinRoom: "Join With Code",
@@ -86,7 +86,7 @@ const I18N = {
     modeAvopaska: "Paskahousu (Open / Face-up)",
     modeArabia: "Arabia (Palace / Shithead)",
     tableCardsTitle: "Table Cards",
-    swapHint: "💡 You can swap cards between hand and table before your turn!",
+    swapHint: "💡 Swap allowed until 1st clear",
     courtRule: "Court Card Rule (J, Q, K)",
     court7: "Only on 7+ (Standard)",
     court9: "Only on 9+ (Strict)",
@@ -231,6 +231,23 @@ class GameApp {
         this.connectToRoom(code);
       }
     });
+
+    // Header logo click: alternate way to leave game / return to main menu
+    const logoGroup = document.getElementById('headerLogoGroup') || document.querySelector('.logo-group');
+    if (logoGroup) {
+      logoGroup.addEventListener('click', () => {
+        if (this.roomId || (this.state && this.state.status !== 'LOBBY')) {
+          const leaveModal = document.getElementById('leaveModal');
+          if (leaveModal) {
+            leaveModal.classList.add('active');
+          } else {
+            this.handleLeaveGame();
+          }
+        } else {
+          window.location.href = window.location.pathname;
+        }
+      });
+    }
 
     // Language toggle
     document.getElementById('langToggleBtn').addEventListener('click', () => {
@@ -406,7 +423,7 @@ class GameApp {
     // Load saved volume (default 0.35)
     const savedVol = localStorage.getItem('valepaska_music_vol');
     if (savedVol !== null) {
-      this.musicPlayer.volume = parseFloat(savedVol);
+      this.musicPlayer.volume = Math.max(0.05, parseFloat(savedVol));
       if (volumeSlider) volumeSlider.value = savedVol;
     } else {
       this.musicPlayer.volume = 0.35;
@@ -449,33 +466,44 @@ class GameApp {
     // Default to true: Lost in the Fire plays automatically!
     const shouldPlay = localStorage.getItem('valepaska_music_on') !== 'false';
 
-    const tryAutoPlay = () => {
-      if (shouldPlay && this.musicPlayer.paused) {
-        const playPromise = this.musicPlayer.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            localStorage.setItem('valepaska_music_on', 'true');
-            updateUI();
-          }).catch(() => {
-            // Browser autoplay restricted: auto-start on very first interaction!
-            const onFirstGesture = () => {
-              if (localStorage.getItem('valepaska_music_on') !== 'false' && this.musicPlayer.paused) {
-                this.musicPlayer.play().then(() => {
-                  localStorage.setItem('valepaska_music_on', 'true');
-                  updateUI();
-                }).catch(() => {});
-              }
-            };
-            ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => {
-              window.addEventListener(evt, onFirstGesture, { once: true, capture: true });
-            });
-          });
-        }
+    const gestureEvents = ['click', 'pointerdown', 'touchstart', 'keydown', 'mousedown'];
+
+    const removeGestureListeners = () => {
+      gestureEvents.forEach(evt => {
+        document.removeEventListener(evt, startMusic, true);
+        window.removeEventListener(evt, startMusic, true);
+      });
+    };
+
+    const startMusic = () => {
+      if (localStorage.getItem('valepaska_music_on') === 'false') return;
+      if (!this.musicPlayer || !this.musicPlayer.paused) return;
+
+      const p = this.musicPlayer.play();
+      if (p !== undefined) {
+        p.then(() => {
+          localStorage.setItem('valepaska_music_on', 'true');
+          updateUI();
+          removeGestureListeners();
+        }).catch(() => {
+          // Waiting for user gesture or audio buffer
+        });
       }
     };
 
-    // Attempt immediate playback on page open
-    tryAutoPlay();
+    // Attach persistent listeners until successfully playing
+    gestureEvents.forEach(evt => {
+      document.addEventListener(evt, startMusic, { capture: true });
+      window.addEventListener(evt, startMusic, { capture: true });
+    });
+
+    this.musicPlayer.addEventListener('canplay', startMusic);
+    this.musicPlayer.addEventListener('loadeddata', startMusic);
+
+    // Try playing immediately on load
+    if (shouldPlay) {
+      startMusic();
+    }
 
     this.musicPlayer.addEventListener('play', updateUI);
     this.musicPlayer.addEventListener('pause', updateUI);
@@ -845,26 +873,41 @@ class GameApp {
         `;
       }
 
-      // In Arabia, render opponent's table cards
+      // In Arabia, render opponent's table cards with clear, high-contrast mini cards
       let oppTableHtml = '';
       if (this.state.rules.mode === 'arabia') {
-        oppTableHtml = '<div class="opp-table-cards">';
+        oppTableHtml = '<div class="opp-table-cards-section">';
+        oppTableHtml += `<div class="opp-table-cards-label">${this.lang === 'fi' ? 'Pöytä' : 'Table'}</div>`;
+        oppTableHtml += '<div class="opp-table-cards">';
         for (let s = 0; s < 3; s++) {
           const upCard = (p.table_up && p.table_up[s]) || null;
           const hasDown = (p.table_down_count && s < p.table_down_count);
           if (upCard || hasDown) {
             oppTableHtml += `<div class="opp-table-slot">`;
-            if (hasDown) {
-              oppTableHtml += `<div class="opp-down-badge">🂠</div>`;
+            if (hasDown && upCard) {
+              oppTableHtml += `<div class="opp-down-layer"></div>`;
             }
             if (upCard) {
-              const cardEl = createCardElement(upCard);
-              oppTableHtml += cardEl.outerHTML;
+              const isRed = isRedSuit(upCard.suit);
+              const suitSym = SUIT_SYMBOLS[upCard.suit] || upCard.suit;
+              const suitName = this.lang === 'fi' ? (SUIT_NAMES_FI[upCard.suit] || '') : (SUIT_NAMES_EN[upCard.suit] || '');
+              oppTableHtml += `
+                <div class="opp-mini-card ${isRed ? 'suit-red' : 'suit-black'}" title="${upCard.rank} ${suitName}">
+                  <span class="opp-mini-rank">${upCard.rank}</span>
+                  <span class="opp-mini-suit">${suitSym}</span>
+                </div>
+              `;
+            } else if (hasDown) {
+              oppTableHtml += `
+                <div class="opp-mini-card opp-mini-card-back" title="${this.lang === 'fi' ? 'Kääntämätön pöytäkortti' : 'Face-down table card'}">
+                  🂠
+                </div>
+              `;
             }
             oppTableHtml += `</div>`;
           }
         }
-        oppTableHtml += '</div>';
+        oppTableHtml += '</div></div>';
       }
 
       seat.innerHTML = `
@@ -1001,7 +1044,7 @@ class GameApp {
       if (tableCardsContainer) tableCardsContainer.style.display = 'flex';
       if (tableCardSlots) tableCardSlots.innerHTML = '';
 
-      const canSwap = !me.has_played_first_turn && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
+      const canSwap = !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
       if (swapHintTag) {
         swapHintTag.style.display = canSwap ? 'inline-block' : 'none';
       }
@@ -1111,7 +1154,7 @@ class GameApp {
         cardEl.style.zIndex = idx + 10;
 
         cardEl.addEventListener('click', () => {
-          const canSwap = this.state.rules.mode === 'arabia' && me && !me.has_played_first_turn && me.table_up && me.table_up.length > 0;
+          const canSwap = this.state.rules.mode === 'arabia' && me && !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
           if (canSwap && this.selectedTableSwapIndex !== null) {
             this.sendWS({
               type: 'swap_table_card',

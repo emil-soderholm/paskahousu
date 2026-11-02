@@ -362,22 +362,85 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
 
         if os.path.isfile(file_path):
             mime_type, _ = mimetypes.guess_type(file_path)
+            if file_path.endswith(".mp3"):
+                mime_type = "audio/mpeg"
+            elif file_path.endswith(".m4a"):
+                mime_type = "audio/mp4"
+            elif file_path.endswith(".js"):
+                mime_type = "application/javascript"
+            elif file_path.endswith(".css"):
+                mime_type = "text/css"
             mime_type = mime_type or "application/octet-stream"
-            with open(file_path, "rb") as f:
-                content = f.read()
 
-            resp = (
+            file_size = os.path.getsize(file_path)
+            range_header = headers.get("range")
+
+            # Handle HTTP 206 Partial Content (essential for audio streaming in Safari/Chrome)
+            if range_header and range_header.startswith("bytes="):
+                try:
+                    ranges = range_header.replace("bytes=", "").split("-")
+                    start = int(ranges[0]) if ranges[0] else 0
+                    end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else file_size - 1
+                    if start >= file_size:
+                        writer.write(b"HTTP/1.1 416 Range Not Satisfiable\r\n\r\n")
+                        await writer.drain()
+                        writer.close()
+                        return
+                    end = min(end, file_size - 1)
+                    content_length = end - start + 1
+
+                    resp_header = (
+                        f"HTTP/1.1 206 Partial Content\r\n"
+                        f"Content-Type: {mime_type}\r\n"
+                        f"Content-Range: bytes {start}-{end}/{file_size}\r\n"
+                        f"Content-Length: {content_length}\r\n"
+                        f"Accept-Ranges: bytes\r\n"
+                        f"Cache-Control: public, max-age=86400\r\n"
+                        f"Connection: keep-alive\r\n\r\n"
+                    ).encode("utf-8")
+                    writer.write(resp_header)
+                    await writer.drain()
+
+                    # Stream chunk
+                    with open(file_path, "rb") as f:
+                        f.seek(start)
+                        remaining = content_length
+                        while remaining > 0 and not writer.is_closing():
+                            chunk = f.read(min(65536, remaining))
+                            if not chunk:
+                                break
+                            writer.write(chunk)
+                            await writer.drain()
+                            remaining -= len(chunk)
+                    writer.close()
+                    return
+                except Exception:
+                    pass
+
+            # Full file response with Accept-Ranges
+            resp_header = (
                 f"HTTP/1.1 200 OK\r\n"
                 f"Content-Type: {mime_type}\r\n"
-                f"Content-Length: {len(content)}\r\n"
-                f"Cache-Control: no-cache\r\n"
-                f"Connection: close\r\n\r\n"
-            ).encode("utf-8") + content
-            writer.write(resp)
+                f"Content-Length: {file_size}\r\n"
+                f"Accept-Ranges: bytes\r\n"
+                f"Cache-Control: public, max-age=86400\r\n"
+                f"Connection: keep-alive\r\n\r\n"
+            ).encode("utf-8")
+            writer.write(resp_header)
             await writer.drain()
+
+            with open(file_path, "rb") as f:
+                while not writer.is_closing():
+                    chunk = f.read(65536)
+                    if not chunk:
+                        break
+                    writer.write(chunk)
+                    await writer.drain()
+            writer.close()
         else:
             writer.write(b"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found")
             await writer.drain()
+            writer.close()
 
     except Exception:
         pass

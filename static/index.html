@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Tuutan ja Emailin korttihuane</title>
+  <title>Tuutan ja Emailin pelihuane</title>
   <link rel="stylesheet" href="style.css">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,9 +12,9 @@
 
   <!-- Top App Header -->
   <header class="app-header">
-    <div class="logo-group">
+    <div class="logo-group clickable-logo" id="headerLogoGroup" title="Palaa päävalikkoon / Poistu pelistä">
       <span class="logo-icon">🃏</span>
-      <span class="logo-text" data-i18n="appTitle">Tuutan ja Emailin korttihuane</span>
+      <span class="logo-text" data-i18n="appTitle">Tuutan ja Emailin pelihuane</span>
     </div>
 
     <div class="header-actions">
@@ -32,6 +32,7 @@
 
   <!-- Background Music Audio Element -->
   <audio id="bgMusicPlayer" loop preload="auto">
+    <source src="music.m4a" type="audio/mp4">
     <source src="music.mp3" type="audio/mpeg">
   </audio>
 
