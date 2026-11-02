@@ -19,7 +19,7 @@
 
     <div class="header-actions">
       <div id="headerRoomCode" class="icon-btn room-badge" style="display:none;"></div>
-      <button id="serverConfigBtn" class="icon-btn" title="Palvelinasetukset (public_html / etäpalvelin)">⚙️</button>
+      <button id="leaveGameBtn" class="icon-btn btn-leave-game" style="display:none;" title="Poistu pelistä">🚪 <span data-i18n="leaveGame">Poistu</span></button>
       <button id="soundToggleBtn" class="icon-btn" title="Äänet päälle / pois">🔊</button>
       <button id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
       <button id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
@@ -197,13 +197,22 @@
 
         <!-- Player Bottom Controls & Hand Area -->
         <div class="player-bottom-area">
-          <div id="currentTurnLabel" style="font-size: 13px; font-weight: 800; margin-bottom: 8px;">Sinun vuorosi!</div>
+          <div id="currentTurnLabel" class="current-turn-label">Sinun vuorosi!</div>
 
-          <!-- Action Buttons -->
+          <!-- Action Buttons Floating Dock -->
           <div class="action-button-bar">
-            <button type="button" id="playCardsBtn" class="action-btn btn-play-action" disabled data-i18n="playCards">Pelaa valitut kortit</button>
-            <button type="button" id="flipDeckBtn" class="action-btn" data-i18n="flipDeck">Käännä pakasta</button>
-            <button type="button" id="pickupPileBtn" class="action-btn" data-i18n="pickupPile">Nosta pöytä</button>
+            <button type="button" id="playCardsBtn" class="action-btn btn-play-action" disabled>
+              <span class="btn-icon">▶</span>
+              <span id="playCardsBtnText" data-i18n="playCards">Pelaa valitut kortit</span>
+            </button>
+            <button type="button" id="flipDeckBtn" class="action-btn btn-flip-action">
+              <span class="btn-icon">🂠</span>
+              <span data-i18n="flipDeck">Käännä pakasta</span>
+            </button>
+            <button type="button" id="pickupPileBtn" class="action-btn btn-pickup-action">
+              <span class="btn-icon">📥</span>
+              <span data-i18n="pickupPile">Nosta pöytä</span>
+            </button>
           </div>
 
           <!-- Fanned Hand Cards -->
@@ -264,26 +273,16 @@
       </div>
     </div>
 
-    <!-- SERVER CONFIG MODAL (for public_html or custom hosting) -->
-    <div id="serverModal" class="modal-overlay">
-      <div class="modal-content">
-        <h2 class="modal-title">⚙️ Palvelinasetukset</h2>
-        <p class="modal-subtitle">Käytä tätä, jos hostaat sivua koulun <code>public_html</code> -kansiossa tai haluat yhdistää ulkoiseen pelipalvelimeen.</p>
-
-        <div class="form-group" style="margin-top: 16px;">
-          <label class="form-label">Pelipalvelimen osoite (WebSocket / HTTP)</label>
-          <input type="text" id="customServerInput" class="form-input" placeholder="esim. my-game.onrender.com tai localhost:8000">
-          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Jätä tyhjäksi, jos ajat peliä suoraan samassa osoitteessa (oletus).</p>
+    <!-- LEAVE GAME MODAL -->
+    <div id="leaveModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 40px; margin-bottom: 8px;">🚪</div>
+        <h2 class="modal-title" data-i18n="leaveTitle">Haluatko poistua pelistä?</h2>
+        <p class="modal-subtitle" data-i18n="leaveSubtitle">Poistut pöydästä takaisin päävalikkoon.</p>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="button" id="confirmLeaveBtn" class="btn-primary" style="background: linear-gradient(135deg, #e63946 0%, #b81424 100%); color: #fff;" data-i18n="confirmLeave">Kyllä, poistu</button>
+          <button type="button" id="cancelLeaveBtn" class="btn-secondary" style="margin-top: 0;" data-i18n="cancel">Peruuta</button>
         </div>
-
-        <div style="font-size: 12px; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 16px;">
-          <strong>Nykyinen yhteysosoite:</strong><br>
-          <code id="currentWsUrlDisplay" style="color: var(--gold); word-break: break-all;">ws://localhost:8000/ws</code>
-        </div>
-
-        <button type="button" id="saveServerBtn" class="btn-primary">Tallenna ja yhdistä</button>
-        <button type="button" id="resetServerBtn" class="btn-secondary">Palauta oletus</button>
-        <button type="button" id="closeServerModalBtn" class="btn-secondary" style="border: none; background: transparent; color: var(--text-muted);">Sulje</button>
       </div>
     </div>
 

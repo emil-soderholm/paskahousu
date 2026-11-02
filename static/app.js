@@ -57,7 +57,11 @@ const I18N = {
     turnOther: "Vuorossa: ",
     noCardsSelected: "Valitse kortit ensin!",
     emptyPile: "Pöytä on tyhjä",
-    cardsSelected: "korttia valittu"
+    cardsSelected: "korttia valittu",
+    leaveGame: "Poistu",
+    leaveTitle: "Haluatko poistua pelistä?",
+    leaveSubtitle: "Poistutaan takaisin päävalikkoon.",
+    confirmLeave: "Kyllä, poistu"
   },
   en: {
     appTitle: "Valepaskahousu",
@@ -88,7 +92,7 @@ const I18N = {
     emptyPickup: "Next player picks up",
     emptyForbidden: "Forbidden on empty table",
     challengeTime: "Challenge Timer",
-    playCards: "Play Selected Cards",
+    playCards: "Pelaa valitut kortit",
     flipDeck: "Flip From Deck",
     pickupPile: "Pick Up Pile",
     pass: "Believe 👍",
@@ -111,7 +115,11 @@ const I18N = {
     turnOther: "Turn: ",
     noCardsSelected: "Select cards first!",
     emptyPile: "Pile is empty",
-    cardsSelected: "card(s) selected"
+    cardsSelected: "card(s) selected",
+    leaveGame: "Leave",
+    leaveTitle: "Leave game?",
+    leaveSubtitle: "Return to the main menu.",
+    confirmLeave: "Yes, leave"
   }
 };
 
@@ -219,50 +227,29 @@ class GameApp {
       this.setLanguage(this.lang === 'fi' ? 'en' : 'fi');
     });
 
-    // Server configuration modal (for public_html / remote servers)
-    const serverBtn = document.getElementById('serverConfigBtn');
-    const serverModal = document.getElementById('serverModal');
-    const serverInput = document.getElementById('customServerInput');
-    const wsUrlDisplay = document.getElementById('currentWsUrlDisplay');
-    const saveServerBtn = document.getElementById('saveServerBtn');
-    const resetServerBtn = document.getElementById('resetServerBtn');
-    const closeServerModalBtn = document.getElementById('closeServerModalBtn');
+    // Leave game modal & button
+    const leaveBtn = document.getElementById('leaveGameBtn');
+    const leaveModal = document.getElementById('leaveModal');
+    const confirmLeaveBtn = document.getElementById('confirmLeaveBtn');
+    const cancelLeaveBtn = document.getElementById('cancelLeaveBtn');
 
-    if (serverBtn && serverModal) {
-      serverBtn.addEventListener('click', () => {
-        if (serverInput) {
-          serverInput.value = localStorage.getItem('valepaska_server_url') || '';
-        }
-        if (wsUrlDisplay) {
-          wsUrlDisplay.textContent = this.getWebSocketUrl();
-        }
-        serverModal.classList.add('active');
+    if (leaveBtn && leaveModal) {
+      leaveBtn.addEventListener('click', () => {
+        leaveModal.classList.add('active');
       });
 
-      closeServerModalBtn.addEventListener('click', () => {
-        serverModal.classList.remove('active');
-      });
+      if (cancelLeaveBtn) {
+        cancelLeaveBtn.addEventListener('click', () => {
+          leaveModal.classList.remove('active');
+        });
+      }
 
-      saveServerBtn.addEventListener('click', () => {
-        const val = serverInput ? serverInput.value.trim() : '';
-        if (val) {
-          localStorage.setItem('valepaska_server_url', val);
-        } else {
-          localStorage.removeItem('valepaska_server_url');
-        }
-        serverModal.classList.remove('active');
-        if (this.roomId) {
-          this.connectToRoom(this.roomId);
-        } else {
-          window.location.reload();
-        }
-      });
-
-      resetServerBtn.addEventListener('click', () => {
-        localStorage.removeItem('valepaska_server_url');
-        if (serverInput) serverInput.value = '';
-        if (wsUrlDisplay) wsUrlDisplay.textContent = this.getWebSocketUrl();
-      });
+      if (confirmLeaveBtn) {
+        confirmLeaveBtn.addEventListener('click', () => {
+          leaveModal.classList.remove('active');
+          this.handleLeaveGame();
+        });
+      }
     }
 
     // Sound toggle
@@ -618,10 +605,54 @@ class GameApp {
     }
   }
 
+  handleLeaveGame() {
+    this.sendWS({ type: 'leave_room' });
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.close();
+      } catch (e) {}
+      this.ws = null;
+    }
+
+    this.roomId = '';
+    this.state = null;
+    this.selectedCardIndices.clear();
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('room');
+      window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+    } catch (e) {}
+
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    if (lobbyScreen) lobbyScreen.classList.add('active');
+    if (gameScreen) gameScreen.classList.remove('active');
+    if (gameOverScreen) gameOverScreen.classList.remove('active');
+
+    const joinSec = document.getElementById('joinOrCreateSection');
+    const waitSec = document.getElementById('roomWaitingSection');
+    const headerCode = document.getElementById('headerRoomCode');
+    const leaveBtn = document.getElementById('leaveGameBtn');
+
+    if (joinSec) joinSec.style.display = 'block';
+    if (waitSec) waitSec.style.display = 'none';
+    if (headerCode) headerCode.style.display = 'none';
+    if (leaveBtn) leaveBtn.style.display = 'none';
+  }
+
   renderLobby() {
     const joinSec = document.getElementById('joinOrCreateSection');
     const waitSec = document.getElementById('roomWaitingSection');
     const headerCode = document.getElementById('headerRoomCode');
+    const leaveBtn = document.getElementById('leaveGameBtn');
 
     if (this.state && this.state.room_id) {
       if (joinSec) joinSec.style.display = 'none';
@@ -630,10 +661,12 @@ class GameApp {
         headerCode.style.display = 'flex';
         headerCode.textContent = this.state.room_id;
       }
+      if (leaveBtn) leaveBtn.style.display = 'flex';
     } else {
       if (joinSec) joinSec.style.display = 'block';
       if (waitSec) waitSec.style.display = 'none';
       if (headerCode) headerCode.style.display = 'none';
+      if (leaveBtn) leaveBtn.style.display = 'none';
     }
 
     // Show lobby room code
@@ -876,16 +909,23 @@ class GameApp {
       });
     }
 
+    // Show leave button during game
+    const leaveBtn = document.getElementById('leaveGameBtn');
+    if (leaveBtn) leaveBtn.style.display = 'flex';
+
     // 8. Update Action Buttons
     const playBtn = document.getElementById('playCardsBtn');
+    const playBtnText = document.getElementById('playCardsBtnText');
     const flipBtn = document.getElementById('flipDeckBtn');
     const pickupBtn = document.getElementById('pickupPileBtn');
 
     playBtn.disabled = !isMyTurn || this.selectedCardIndices.size === 0;
-    if (this.selectedCardIndices.size > 0) {
-      playBtn.textContent = `${this.t('playCards')} (${this.selectedCardIndices.size})`;
+    const baseText = this.t('playCards');
+    const label = this.selectedCardIndices.size > 0 ? `${baseText} (${this.selectedCardIndices.size})` : baseText;
+    if (playBtnText) {
+      playBtnText.textContent = label;
     } else {
-      playBtn.textContent = this.t('playCards');
+      playBtn.textContent = label;
     }
 
     flipBtn.disabled = !isMyTurn || this.state.draw_deck_count === 0;

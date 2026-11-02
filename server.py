@@ -225,6 +225,12 @@ async def handle_websocket_session(ws: WebSocketConnection):
                     await current_room.broadcast_state()
                     current_room.check_next_turn()
 
+            elif msg_type == "leave_room":
+                current_room.leave_player(player_id)
+                await current_room.broadcast_state()
+                current_room.check_next_turn()
+                break
+
             elif msg_type == "dismiss_reveal":
                 current_room.game.dismiss_reveal()
                 await current_room.broadcast_state()

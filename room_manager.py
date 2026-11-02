@@ -107,6 +107,39 @@ class Room:
             human_players = [p for p in self.game.players if not p.is_bot and p.connected]
             self.host_id = human_players[0].id if human_players else None
 
+    def leave_player(self, player_id: str):
+        if player_id in self.connections:
+            del self.connections[player_id]
+
+        player = self.game.get_player(player_id)
+        if not player:
+            return
+
+        if self.game.status == "LOBBY":
+            if player in self.game.players:
+                self.game.players.remove(player)
+        else:
+            player.connected = False
+            player.is_out = True
+            if self.game.current_player() == player:
+                self.game._advance_turn()
+            if self.game.challenge_state and self.game.challenge_state.player_id == player_id:
+                self.game.resolve_unchallenged()
+
+        self.game.add_log(
+            f"{player.name} poistui pelistä.",
+            f"{player.name} left the game.",
+            "leave"
+        )
+
+        humans = [p for p in self.game.players if not p.is_bot and p.connected]
+        if self.host_id == player_id:
+            self.host_id = humans[0].id if humans else None
+
+        active = self.game.active_players()
+        if len(active) <= 1 and self.game.status not in ["LOBBY", "GAME_OVER"]:
+            self.game.status = "GAME_OVER"
+
     def add_bot(self) -> Optional[Player]:
         if self.game.status != "LOBBY":
             return None

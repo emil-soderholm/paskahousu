@@ -181,6 +181,7 @@ class BotAI:
         """
         Decides whether the bot should challenge during a CHALLENGE_WINDOW.
         Uses counting of known cards and risk/reward.
+        Bots are relaxed and only challenge when mathematically certain or under strong suspicion.
         """
         cs = game.challenge_state
         if not cs or cs.player_id == bot.id:
@@ -190,7 +191,7 @@ class BotAI:
         claimed_count = len(cs.played_cards)
         pile_size = len(game.play_pile)
 
-        # 1. Card counting: how many of declared_rank are in bot's hand?
+        # 1. Definite card counting: how many of declared_rank are in bot's hand?
         in_hand = sum(1 for c in bot.hand if c.rank == declared_rank)
 
         # In standard 52-card deck, there are only 4 of each rank
@@ -201,36 +202,42 @@ class BotAI:
         if in_hand == 3 and claimed_count >= 2:
             return True
 
-        # 2. Suspicion calculation
-        suspicion = 0.15  # baseline skepticism
+        if in_hand == 4:
+            return True
 
-        # Claiming many cards (e.g. 3 or 4) is suspicious
-        if claimed_count == 2:
-            suspicion += 0.12
+        # 2. Relaxed human-like suspicion calculation
+        # Players in casual games believe each other most of the time
+        suspicion = 0.04  # Baseline: 4%
+
+        # Playing 1 card is normal and almost never challenged
+        if claimed_count == 1:
+            suspicion += 0.02
+        elif claimed_count == 2:
+            suspicion += 0.06
         elif claimed_count >= 3:
-            suspicion += 0.45
+            suspicion += 0.16
 
-        # If bot already holds 1 or 2 of that rank, suspicion increases
-        if in_hand == 1:
-            suspicion += 0.15
-        elif in_hand == 2:
-            suspicion += 0.35
+        # If bot holds 2 of that rank, slight suspicion
+        if in_hand == 2:
+            suspicion += 0.08
 
-        # If claiming Kaatokortti (10 or Ace) on a juicy pile:
+        # If claiming Kaatokortti (10 or Ace): small suspicion bump
         if declared_rank in ['10', 'A']:
-            suspicion += 0.20
+            suspicion += 0.05
 
-        # Target player's card count: if target is close to winning (1 or 2 cards left), they bluff aggressively!
+        # Target player's card count: if opponent has only 0 cards left and is claiming to finish:
         target_player = game.get_player(cs.player_id)
-        if target_player and len(target_player.hand) <= 2:
-            suspicion += 0.25
+        if target_player and len(target_player.hand) == 0:
+            suspicion += 0.14
 
-        # Pile size risk: if pile is massive (e.g. 12 cards), challenger risks picking up 12 cards if wrong!
-        # High pile makes bot more cautious unless suspicion is very high.
-        risk_penalty = min(0.35, (pile_size / 25.0) * 0.35)
-        adjusted_suspicion = suspicion - risk_penalty
+        # Pile size risk: picking up a big pile is dangerous!
+        # The larger the pile, the less likely anyone wants to risk challenging
+        risk_penalty = min(0.20, (pile_size / 15.0) * 0.20)
+        adjusted_suspicion = max(0.02, suspicion - risk_penalty)
 
-        # Random personality jitter
+        # Cap non-certain challenge rate so bots don't gang up
+        adjusted_suspicion = min(0.18, adjusted_suspicion)
+
         roll = random.random()
         return roll < adjusted_suspicion
 
