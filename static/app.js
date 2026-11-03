@@ -534,43 +534,67 @@ class GameApp {
         id: 'starboy',
         title: 'Starboy',
         artist: 'The Weeknd ft. Daft Punk',
-        file: 'starboy.m4a',
-        fallback: 'starboy.mp3'
+        file: 'starboy.m4a'
+      },
+      {
+        id: 'wake_me_up',
+        title: 'Wake Me Up',
+        artist: 'The Weeknd',
+        file: 'wake_me_up.m4a'
+      },
+      {
+        id: 'timeless',
+        title: 'Timeless',
+        artist: 'The Weeknd & Playboi Carti',
+        file: 'timeless.m4a'
+      },
+      {
+        id: 'moth_to_a_flame',
+        title: 'Moth To A Flame',
+        artist: 'Swedish House Mafia & The Weeknd',
+        file: 'moth_to_a_flame.m4a'
       },
       {
         id: 'save_your_tears',
         title: 'Save Your Tears',
         artist: 'The Weeknd',
-        file: 'save_your_tears.m4a',
-        fallback: 'save_your_tears.mp3'
+        file: 'save_your_tears.m4a'
       },
       {
         id: 'the_hills',
         title: 'The Hills',
         artist: 'The Weeknd',
-        file: 'the_hills.m4a',
-        fallback: 'the_hills.mp3'
+        file: 'the_hills.m4a'
       },
       {
         id: 'cant_feel_my_face',
         title: "Can't Feel My Face",
         artist: 'The Weeknd',
-        file: 'cant_feel_my_face.m4a',
-        fallback: 'cant_feel_my_face.mp3'
+        file: 'cant_feel_my_face.m4a'
       },
       {
         id: 'die_for_you',
         title: 'Die For You',
         artist: 'The Weeknd',
-        file: 'die_for_you.m4a',
-        fallback: 'die_for_you.mp3'
+        file: 'die_for_you.m4a'
       },
       {
         id: 'heartless',
         title: 'Heartless',
         artist: 'The Weeknd',
-        file: 'heartless.m4a',
-        fallback: 'heartless.mp3'
+        file: 'heartless.m4a'
+      },
+      {
+        id: 'pretty',
+        title: 'Pretty',
+        artist: 'The Weeknd',
+        file: 'pretty.m4a'
+      },
+      {
+        id: 'kiss_land',
+        title: 'Kiss Land',
+        artist: 'The Weeknd',
+        file: 'kiss_land.m4a'
       }
     ];
 
@@ -700,10 +724,11 @@ class GameApp {
     localStorage.setItem('valepaska_selected_track', track.id);
 
     this.musicPlayer.pause();
-    this.musicPlayer.innerHTML = `
-      <source src="${track.file}" type="audio/mp4">
-      <source src="${track.fallback}" type="audio/mpeg">
-    `;
+    let sources = `<source src="${track.file}" type="audio/mp4">`;
+    if (track.fallback && track.fallback !== track.file) {
+      sources += `\n      <source src="${track.fallback}" type="audio/mpeg">`;
+    }
+    this.musicPlayer.innerHTML = sources;
     this.musicPlayer.load();
 
     if (autoplay) {

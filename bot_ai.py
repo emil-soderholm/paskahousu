@@ -148,6 +148,14 @@ class BotAI:
 
         # In Open Paskahousu: cannot bluff
         if not is_valepaska:
+            # If the only legal card is 2 on a single-card pile, save the 2 and flip deck or pickup
+            has_other_cards = any(c.rank != '2' for c in bot.hand)
+            if held_legal_ranks == ['2'] and has_other_cards and len(game.play_pile) == 1:
+                if game.draw_deck:
+                    return {"action": "flip_deck"}
+                elif game.play_pile:
+                    return {"action": "pickup"}
+
             if held_legal_ranks:
                 chosen_rank = BotAI._pick_best_honest_rank(game, held_legal_ranks, pile_size, bot=bot)
                 indices = rank_to_indices[chosen_rank]
