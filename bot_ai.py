@@ -22,7 +22,7 @@ BOT_NAMES = [
 
 class BotAI:
     @staticmethod
-    def get_legal_ranks_for_pile(game: GameState) -> List[str]:
+    def get_legal_ranks_for_pile(game: GameState, bot: Optional[Player] = None) -> List[str]:
         top = game.get_top_pile_card()
         candidates = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2']
         legal = []
@@ -32,6 +32,15 @@ class BotAI:
                 if top is None and game.rules.empty_ten_ace == "forbidden" and r in ['10', 'A']:
                     continue
                 legal.append(r)
+
+        # In Arabia, if top is None and bot only holds court cards, allow court cards on empty table to prevent stall
+        if game.rules.mode == "arabia" and not game.first_kaato_done and top is None and bot:
+            available = bot.hand if bot.hand else bot.table_up
+            if available and all(c.rank in COURT_RANKS or c.rank == 'A' for c in available):
+                for r in ['J', 'Q', 'K', 'A']:
+                    if r not in legal:
+                        legal.append(r)
+
         return legal
 
     @staticmethod
@@ -51,11 +60,11 @@ class BotAI:
                 for idx, card in enumerate(bot.hand):
                     rank_to_indices.setdefault(card.rank, []).append(idx)
 
-                legal_ranks = BotAI.get_legal_ranks_for_pile(game)
+                legal_ranks = BotAI.get_legal_ranks_for_pile(game, bot)
                 held_legal = [r for r in legal_ranks if r in rank_to_indices]
 
                 if held_legal:
-                    chosen_rank = BotAI._pick_best_honest_rank(game, held_legal, pile_size)
+                    chosen_rank = BotAI._pick_best_honest_rank(game, held_legal, pile_size, bot=bot)
                     return {
                         "action": "play",
                         "source": "hand",
@@ -65,20 +74,33 @@ class BotAI:
                 else:
                     if game.draw_deck:
                         return {"action": "flip_deck"}
-                    else:
+                    elif game.play_pile:
                         return {"action": "pickup"}
+                    else:
+                        first_card = bot.hand[0]
+                        indices = [i for i, c in enumerate(bot.hand) if c.rank == first_card.rank]
+                        return {
+                            "action": "play",
+                            "source": "hand",
+                            "card_indices": indices,
+                            "declared_rank": first_card.rank
+                        }
 
-            # 2. Hand is empty & draw deck is empty -> Play from Table Up
-            if not game.draw_deck and bot.table_up:
+            # 2. Hand is empty, but draw deck has cards -> Flip from Deck
+            if not bot.hand and game.draw_deck:
+                return {"action": "flip_deck"}
+
+            # 3. Hand is empty & draw deck is empty -> Play from Table Up
+            if not bot.hand and not game.draw_deck and bot.table_up:
                 up_rank_to_indices: Dict[str, List[int]] = {}
                 for idx, card in enumerate(bot.table_up):
                     up_rank_to_indices.setdefault(card.rank, []).append(idx)
 
-                legal_ranks = BotAI.get_legal_ranks_for_pile(game)
+                legal_ranks = BotAI.get_legal_ranks_for_pile(game, bot)
                 held_legal = [r for r in legal_ranks if r in up_rank_to_indices]
 
                 if held_legal:
-                    chosen_rank = BotAI._pick_best_honest_rank(game, held_legal, pile_size)
+                    chosen_rank = BotAI._pick_best_honest_rank(game, held_legal, pile_size, bot=bot)
                     return {
                         "action": "play",
                         "source": "table_up",
@@ -86,15 +108,30 @@ class BotAI:
                         "declared_rank": chosen_rank
                     }
                 else:
-                    return {"action": "pickup"}
+                    if game.play_pile:
+                        return {"action": "pickup"}
+                    else:
+                        # Pile is empty! Play lowest card from table_up
+                        card = min(bot.table_up, key=lambda c: c.value)
+                        indices = [i for i, c in enumerate(bot.table_up) if c.rank == card.rank]
+                        return {
+                            "action": "play",
+                            "source": "table_up",
+                            "card_indices": indices,
+                            "declared_rank": card.rank
+                        }
 
-            # 3. Hand, Deck, and Table Up are empty -> Blind flip from Table Down
-            if not game.draw_deck and not bot.table_up and bot.table_down:
+            # 4. Hand, Deck, and Table Up are empty -> Blind flip from Table Down
+            if not bot.hand and not game.draw_deck and not bot.table_up and bot.table_down:
                 return {
                     "action": "play_blind",
                     "card_index": 0
                 }
 
+            if game.play_pile:
+                return {"action": "pickup"}
+            if game.draw_deck:
+                return {"action": "flip_deck"}
             return {"action": "pickup"}
 
         # Group cards in bot's hand by rank
@@ -102,7 +139,7 @@ class BotAI:
         for idx, card in enumerate(bot.hand):
             rank_to_indices.setdefault(card.rank, []).append(idx)
 
-        legal_ranks = BotAI.get_legal_ranks_for_pile(game)
+        legal_ranks = BotAI.get_legal_ranks_for_pile(game, bot)
 
         # Check which legal ranks the bot ACTUALLY holds
         held_legal_ranks = [r for r in legal_ranks if r in rank_to_indices]
@@ -112,7 +149,7 @@ class BotAI:
         # In Open Paskahousu: cannot bluff
         if not is_valepaska:
             if held_legal_ranks:
-                chosen_rank = BotAI._pick_best_honest_rank(game, held_legal_ranks, pile_size)
+                chosen_rank = BotAI._pick_best_honest_rank(game, held_legal_ranks, pile_size, bot=bot)
                 indices = rank_to_indices[chosen_rank]
                 return {
                     "action": "play",
@@ -124,8 +161,17 @@ class BotAI:
                 # No legal cards in hand
                 if game.draw_deck:
                     return {"action": "flip_deck"}
-                else:
+                elif game.play_pile:
                     return {"action": "pickup"}
+                else:
+                    first_card = bot.hand[0]
+                    indices = [i for i, c in enumerate(bot.hand) if c.rank == first_card.rank]
+                    return {
+                        "action": "play",
+                        "source": "hand",
+                        "card_indices": indices,
+                        "declared_rank": first_card.rank
+                    }
 
         # In Valepaskahousu: can bluff or play honest
         if held_legal_ranks:
@@ -133,7 +179,7 @@ class BotAI:
             bluff_roll = random.random()
             if bluff_roll > 0.22 or pile_size >= 6:
                 # Play honest
-                chosen_rank = BotAI._pick_best_honest_rank(game, held_legal_ranks, pile_size)
+                chosen_rank = BotAI._pick_best_honest_rank(game, held_legal_ranks, pile_size, bot=bot)
                 indices = rank_to_indices[chosen_rank]
                 return {
                     "action": "play",
@@ -177,6 +223,28 @@ class BotAI:
                 has_lower_cards = any(c.value < RANK_VALUES[top_rank] and c.rank not in ['2', '10'] for c in p.hand)
                 if has_lower_cards and random.random() < 0.75:
                     return '2'
+
+            # Otherwise prefer normal lowest card
+            if normal:
+                normal.sort(key=lambda r: RANK_VALUES[r])
+                return normal[0]
+
+            # If only kaato or twos left
+            if twos:
+                return '2'
+            if kaato:
+                return kaato[0]
+
+            return held_legal_ranks[0]
+        else:
+            # Standard Paskahousu & Valepaskahousu
+            normal = [r for r in held_legal_ranks if r not in ['2', '10', 'A']]
+            kaato = [r for r in held_legal_ranks if r in ['10', 'A']]
+            twos = [r for r in held_legal_ranks if r == '2']
+
+            # If pile has 3+ cards, Kaato is tempting!
+            if kaato and pile_size >= 3:
+                return kaato[0]
 
             # Otherwise prefer normal lowest card
             if normal:

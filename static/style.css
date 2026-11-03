@@ -1740,51 +1740,97 @@ input, select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(10, 15, 24, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 3px 8px 5px 8px;
-  margin-bottom: 5px;
+  background: rgba(10, 15, 24, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 8px 14px 10px 14px;
+  margin-bottom: 8px;
+  width: min(94%, 440px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .table-cards-top-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 8px;
-  margin-bottom: 3px;
+  margin-bottom: 6px;
+  padding: 0 4px;
 }
 
 .dock-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .dock-hint {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--gold);
+  line-height: 1.25;
+  text-align: right;
 }
 
 .table-slots-row {
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .table-card-slot {
   position: relative;
-  width: calc(var(--card-w) * 0.72);
-  height: calc(var(--card-h) * 0.72);
+  width: calc(var(--card-w) * 0.88);
+  height: calc(var(--card-h) * 0.88);
+  flex-shrink: 0;
+}
+
+.table-card-slot .playing-card {
+  width: 100% !important;
+  height: 100% !important;
+  margin-right: 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.table-card-slot .playing-card .card-inner {
+  padding: 3px 4px;
+}
+
+.table-card-slot .playing-card .card-rank {
+  font-size: 12px;
+}
+
+.table-card-slot .playing-card .card-suit {
+  font-size: 10px;
+}
+
+.table-card-slot .playing-card .court-badge,
+.table-card-slot .playing-card .ten-icon,
+.table-card-slot .playing-card .two-icon {
+  font-size: 16px;
+}
+
+.table-card-slot .playing-card .card-center-suit {
+  font-size: 18px;
 }
 
 .table-slot-down {
   position: absolute;
   inset: 0;
-  transform: translate(-2px, -2px);
+  transform: translate(-3px, -3px);
   z-index: 1;
+}
+
+.table-slot-down .playing-card {
+  width: 100% !important;
+  height: 100% !important;
+  margin-right: 0 !important;
 }
 
 .table-slot-up {
