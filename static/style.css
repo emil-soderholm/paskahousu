@@ -322,15 +322,18 @@ input, select {
    ========================================================================== */
 #app {
   flex: 1;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: calc(100% - 44px);
+  height: 100%;
 }
 
 .screen {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -835,13 +838,17 @@ input, select {
    ========================================================================== */
 #gameScreen {
   background: radial-gradient(ellipse at 50% 45%, var(--felt-green-center) 0%, var(--felt-green-mid) 60%, var(--felt-green-edge) 100%);
-  position: relative;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
 .felt-table-wrapper {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
