@@ -155,7 +155,8 @@ async def handle_websocket_session(ws: WebSocketConnection):
                     "type": "joined_room",
                     "room_id": r_id,
                     "player_id": p_id,
-                    "is_host": (p_id == current_room.host_id)
+                    "is_host": (p_id == current_room.host_id),
+                    "chat_history": current_room.chat_history
                 })
 
                 await current_room.broadcast_state()
@@ -260,7 +261,7 @@ async def handle_websocket_session(ws: WebSocketConnection):
                 if player:
                     text = data.get("text", "").strip()
                     if text:
-                        await current_room.add_chat(player.name, player.avatar, text)
+                        await current_room.add_chat(player_id, player.name, player.avatar, text)
 
     finally:
         if current_room and player_id:

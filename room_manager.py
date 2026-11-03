@@ -50,9 +50,10 @@ class Room:
             except Exception:
                 pass
 
-    async def add_chat(self, sender_name: str, sender_avatar: str, text: str):
+    async def add_chat(self, player_id: str, sender_name: str, sender_avatar: str, text: str):
         chat_entry = {
             "id": str(uuid.uuid4())[:8],
+            "player_id": player_id,
             "time": time.time(),
             "name": sender_name,
             "avatar": sender_avatar,

@@ -318,6 +318,15 @@ class GameApp {
     // Table quick chat form & direct emotes
     const tableQuickChatForm = document.getElementById('tableQuickChatForm');
     const tableQuickChatInput = document.getElementById('tableQuickChatInput');
+    const tableChatBar = document.getElementById('tableChatBar');
+    const toggleTableChatBtn = document.getElementById('toggleTableChatBtn');
+
+    if (toggleTableChatBtn && tableChatBar) {
+      toggleTableChatBtn.addEventListener('click', () => {
+        tableChatBar.classList.toggle('mobile-open');
+      });
+    }
+
     if (tableQuickChatForm && tableQuickChatInput) {
       tableQuickChatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -326,6 +335,7 @@ class GameApp {
           this.sendWS({ type: 'chat', text });
           tableQuickChatInput.value = '';
           tableQuickChatInput.blur();
+          if (tableChatBar) tableChatBar.classList.remove('mobile-open');
         }
       });
     }
@@ -335,6 +345,7 @@ class GameApp {
         const emote = btn.textContent.trim();
         this.sendWS({ type: 'chat', text: emote });
         window.sounds.playPop();
+        if (tableChatBar) tableChatBar.classList.remove('mobile-open');
       });
     });
 
@@ -735,10 +746,37 @@ class GameApp {
       if (codeDisplay) codeDisplay.textContent = msg.room_id;
       const headerCode = document.getElementById('headerRoomCode');
       if (headerCode) headerCode.textContent = msg.room_id;
+
+      if (msg.chat_history && Array.isArray(msg.chat_history)) {
+        const box = document.getElementById('chatMessagesBox');
+        if (box && box.children.length === 0) {
+          msg.chat_history.forEach(m => this.appendChatMessage(m));
+        }
+      }
     } else if (msg.type === 'state_update') {
       const oldState = this.state;
       this.state = msg.state;
       this.isHost = msg.is_host;
+
+      // Always clear Arabia swap state on updates so no cards stay stuck in swap mode
+      this.selectedHandSwapIndex = null;
+      this.selectedTableSwapIndex = null;
+
+      // Clear card selections if not my turn or if hand changed
+      const me = this.state.players.find(p => p.id === this.playerId);
+      const isMyTurn = (this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+      if (!isMyTurn || !me || !me.hand) {
+        this.selectedCardIndices.clear();
+        this.selectedTableUpIndices.clear();
+      } else {
+        // Remove any out-of-bounds selection indices (e.g. after playing a card)
+        for (const idx of Array.from(this.selectedCardIndices)) {
+          if (idx >= me.hand.length) {
+            this.selectedCardIndices.delete(idx);
+          }
+        }
+      }
+
       this.handleStateAudio(oldState, this.state);
       this.render();
     } else if (msg.type === 'chat_message') {
@@ -1502,11 +1540,13 @@ class GameApp {
     let indices;
     if (source === 'table_up') {
       indices = Array.from(this.selectedTableUpIndices);
-      this.selectedTableUpIndices.clear();
     } else {
       indices = Array.from(this.selectedCardIndices);
-      this.selectedCardIndices.clear();
     }
+    this.selectedTableUpIndices.clear();
+    this.selectedCardIndices.clear();
+    this.selectedHandSwapIndex = null;
+    this.selectedTableSwapIndex = null;
 
     this.sendWS({
       type: 'play_cards',
@@ -1552,10 +1592,20 @@ class GameApp {
   }
 
   showTableBubble(msg) {
-    const isMe = (msg.player_id === this.playerId);
-    const anchor = isMe 
+    const isMe = (msg.player_id === this.playerId || (msg.name === this.playerName && msg.avatar === this.playerAvatar));
+    let anchor = isMe 
       ? document.getElementById('myBubbleAnchor') 
-      : document.getElementById(`bubbleAnchor-${msg.player_id}`);
+      : (msg.player_id ? document.getElementById(`bubbleAnchor-${msg.player_id}`) : null);
+
+    if (!anchor && !isMe) {
+      const seats = document.querySelectorAll('.opponent-seat');
+      for (const s of seats) {
+        if (s.querySelector('.opponent-name')?.textContent === msg.name) {
+          anchor = s.querySelector('.table-bubble-anchor');
+          break;
+        }
+      }
+    }
 
     if (!anchor) return;
 

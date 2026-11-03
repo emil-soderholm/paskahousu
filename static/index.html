@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tuutan ja Emailin pelihuane</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
@@ -198,20 +198,23 @@
         </div>
 
         <!-- Floating Quick Emotes & Direct Table Chat Bar -->
-        <div class="table-chat-bar">
-          <div class="floating-emotes">
-            <button type="button" class="emote-btn" title="Paska">💩</button>
-            <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
-            <button type="button" class="emote-btn" title="Haha">😂</button>
-            <button type="button" class="emote-btn" title="Liekeissä">🔥</button>
-            <button type="button" class="emote-btn" title="Katsotaan">👀</button>
-            <button type="button" class="emote-btn" title="Peukku">👍</button>
-            <button type="button" class="emote-btn" title="Itku">😭</button>
+        <div id="tableChatBar" class="table-chat-bar">
+          <button type="button" id="toggleTableChatBtn" class="table-chat-mobile-toggle" title="Pikareaktiot">💬</button>
+          <div class="table-chat-content">
+            <div class="floating-emotes">
+              <button type="button" class="emote-btn" title="Paska">💩</button>
+              <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
+              <button type="button" class="emote-btn" title="Haha">😂</button>
+              <button type="button" class="emote-btn" title="Liekeissä">🔥</button>
+              <button type="button" class="emote-btn" title="Katsotaan">👀</button>
+              <button type="button" class="emote-btn" title="Peukku">👍</button>
+              <button type="button" class="emote-btn" title="Itku">😭</button>
+            </div>
+            <form id="tableQuickChatForm" class="table-quick-chat-form">
+              <input type="text" id="tableQuickChatInput" class="table-quick-chat-input" placeholder="Viesti pöytään... (Enter)" maxlength="80" autocomplete="off">
+              <button type="submit" class="table-quick-chat-send" title="Lähetä">➤</button>
+            </form>
           </div>
-          <form id="tableQuickChatForm" class="table-quick-chat-form">
-            <input type="text" id="tableQuickChatInput" class="table-quick-chat-input" placeholder="Viesti pöytään... (Enter)" maxlength="80" autocomplete="off">
-            <button type="submit" class="table-quick-chat-send" title="Lähetä">➤</button>
-          </form>
         </div>
 
         <!-- Player Bottom Controls & Hand Area -->
@@ -333,9 +336,9 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=2"></script>
-  <script src="audio.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <script src="cards.js?v=3"></script>
+  <script src="audio.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
 
