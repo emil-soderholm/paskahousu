@@ -137,7 +137,7 @@ Jos koulussasi on SSH-pääsy shell-palvelimeen (kuten monissa suomalaisissa yli
 ## 🛠 Tiedostorakenne / Architecture
 
 ```
-valepaskahousu/
+Pelihuone/
 ├── server.py              # Pure Python 3 async HTTP + RFC 6455 WebSocket palvelin
 ├── game_engine.py         # Paskahousun ja Valepaskahousun sääntömoottori ja tilakone
 ├── room_manager.py        # Moninpelihuoneet, pelaajasessiot, ajastimet ja viestintä
