@@ -1,16 +1,16 @@
-# 🃏 Paskahousu & Valepaskahousu – Moninpeli (Multiplayer)
+# 🃏 Tuutan ja Emailin Pelihuone
 
-A modern, responsive, zero-dependency multiplayer web game for the iconic Finnish card games **Paskahousu** (Open) and **Valepaskahousu** (Bluff / Cheat).
+Moderni, responsiivinen ja nollarivinen moninpelisovellus suomalaisille suosikkikorttipeleille: **Paskahousu**, **Valepaskahousu** ja **Arabia**.
 
-Play in real-time with your friends across mobile phones, tablets, and computers, or practice with smart AI bots!
+Pelaa reaaliajassa kavereiden kanssa puhelimella, tabletilla tai tietokoneella, tai harjoittele älykkäitä AI-botteja vastaan!
 
 ---
 
-## 🚀 Pika-aloitus / Quick Start
+## 🚀 Pika-aloitus / Paikallinen ajo
 
-Peli ei vaadi mitään ulkoisia kirjastoja tai asennuksia – pelkkä **Python 3** (3.8+) riittää!
+Peli ei vaadi ulkoisia kirjastoja tai pakettiasennuksia – pelkkä **Python 3** (3.8+) riittää!
 
-### 1. Käynnistä palvelin (Start the server)
+### 1. Käynnistä palvelin
 ```bash
 python3 server.py
 ```
@@ -18,156 +18,129 @@ python3 server.py
 Palvelin tulostaa terminaaliin liittymisosoitteet:
 ```
 ============================================================
- 🃏 PASKAHOUSU & VALEPASKAHOUSU MULTIPLAYER SERVER 🃏
+ 🃏 TUUTAN JA EMAILIN PELIHUONE MULTIPLAYER SERVER 🃏
 ============================================================
  * Local:   http://localhost:8000
- * Network: http://192.168.1.45:8000  <-- Jaa tämä kavereille samassa Wi-Fi-verkossa!
+ * Network: http://192.168.1.x:8000  <-- Jaa kavereille samassa Wi-Fi-verkossa!
 ============================================================
 ```
 
-### 2. Avaa selaimessa (Open in browser)
-* **Sinä:** Avaa `http://localhost:8000`
-* **Kaverit samassa Wi-Fi-verkossa:** Avaa kännykällä tai koneella osoite `http://<sinun-ip>:8000` (esim. `http://192.168.1.45:8000`).
-* **Kaverit internetin yli:** Voit jakaa pelin ilmaiseksi esim. [ngrok](https://ngrok.com/) tai [Cloudflare Tunnels](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) kautta:
-  ```bash
-  ngrok http 8000
-  ```
-  ja jaat ngrok-osoitteen kavereillesi!
+### 2. Avaa selaimessa
+* Avaa tietokoneella tai puhelimella: `http://localhost:8000` (tai lähiverkon IP).
 
 ---
 
-## 🎮 Ominaisuudet / Features
+## ☁️ Tuotanto & Julkaisu (Render.com)
 
-* 🃏 **Kaksi pelimuotoa:** Valepaskahousu (bluffaus / nurinpäin) ja perinteinen avoin Paskahousu.
-* 👥 **Moninpeli huonejärjestelmällä:** Luo huone, jaa 4-kirjaiminen koodi tai suora kutsulinkki.
-* 🤖 **Älykkäät AI-botit:** Lisää huoneeseen botteja (Pekka, Jari, Sirpa, Matti...) testausta varten tai täydentämään vajaata peliporukkaa.
-* ⚙️ **Mukautettavat kotisäännöt:**
-  * Seiskan sääntö (Kuvakortit 7+, 9+ tai vapaa)
-  * Kakkosen sääntö (Vain toinen 2 päälle tai kakkonen nollaa pinon)
-  * Kymppi tyhjään pöytään (Seuraava joutuu nostamaan tai kielletty)
-  * Haastoaika (sekunteina)
-* 🔊 **Web Audio API -äänet:** Autenttiset korttiäänet, haastohälytys, kiinnijäämissummeri, voittotörähdys ja legendaarinen Paskahousun vesivessan huuhtelu!
-* 💬 **Reaaliaikainen chat ja pika-reaktiot:** 💩, 🤥, 😂, 🔥, 👀.
-* 🌐 **Kaksikielinen (FI / EN):** Vaihda suomen ja englannin välillä yläpalkin napista.
-* 📱 **Täysin responsiivinen:** Toimii puhelimilla (pysty ja vaaka), tableteilla ja tietokoneilla.
+Koko projekti on suunniteltu pyörimään suoraan **Render.com** -pilvipalvelussa:
+
+* **Palvelintyyppi:** Web Service (Python)
+* **Käynnistyskomento:** `python3 server.py`
+* **Ympäristömuuttujat:** `PORT=10000` (Render asettaa tämän automaattisesti)
+* **Määritystiedosto:** [`render.yaml`](render.yaml) automatisoi asetukset suoraan koodivarastosta.
+
+Kun koodi yhdistetään GitHubin `main`-haaraan, Render päivittää ja käynnistää palvelun automaattisesti.
 
 ---
 
-## 📜 Pelin Säännöt / Game Rules
+## 🎮 Pelimuodot & Säännöt
 
-### Korttien arvojärjestys
-Paskahousussa normaali arvojärjestys pienimmästä suurimpaan:
+### Korttien yleinen arvojärjestys
 $$\text{3 – 4 – 5 – 6 – 7 – 8 – 9 – 10 – J – Q – K – A} \quad (\text{2 on erikoiskortti})$$
 
-* **Kakkonen (2):** Voi lyödä minkä tahansa kortin päälle (paitsi kympin ja ässän). Kakkosen päälle saa lyödä vain toisen kakkosen (tai kotisäännöistä riippuen se nollaa pinon).
-* **Kymppi (10):** Kaatokortti numeroille (3–9). Kaataa pakan sivuun!
-* **Ässä (A):** Kaatokortti kuvakorteille (J, Q, K) ja ässälle. Kaataa pakan sivuun!
-* **Neljä samaa (Neloset):** Neljä samannumeroista korttia peräkkäin kaataa aina pakan automaattisesti!
-* **Seiskan sääntö:** Kuvakortteja (J, Q, K) ei saa lyödä seiskaa pienempien korttien päälle.
+* **Kaadot:**
+  * **Kymppi (10):** Kaataa numerokortit (3–9) sivuun (Arabiassa kaataa aina).
+  * **Ässä (A):** Kaataa kuvakortit (J, Q, K) ja Ässän sivuun (avopelissä ja valepaskassa).
+  * **Neloset (4 samaa):** Neljä samanarvoista korttia peräkkäin kaataa pakan automaattisesti sivuun!
+* **Paskahousun kruunaus:** Pelaaja, jolle jää viimeisenä kortteja käteen tai pöytään, häviää ja on virallinen **PASKAHOUSU**! 💩
 
 ---
 
-### 1. Valepaskahousu (Valepaska)
+### 1. Arabia
+Arabia on taktinen ja vauhdikas pelimuoto, jossa jokaisella pelaajalla on 3 piilokorttia, 3 avointa pöytäkorttia ja käsikortit.
+
+1. **Aloitusvaihto:** Ennen pelin ensimmäistä kaatoa pelaajat saavat vapaasti vaihtaa käsikorttejaan omien avointen pöytäkorttiensa kanssa.
+2. **Kuvakorttien lukitus:** Kuvakortteja (J, Q, K, A) **ei saa** pelata ennen kuin pelin ensimmäinen kaato (kympillä tai 4 samalla) on tapahtunut!
+3. **Kakkonen (2):** Kakkosen saa lyödä minkä tahansa kortin päälle, se nollaa pöydän ja **pelaaja saa heti jatkaa vuoroaan** uudella kortilla.
+4. **Korttien loppuminen:**
+   * Ensin pelataan käsikortit (nostopakasta täydennetään 3 korttiin asti niin kauan kuin pakkaa riittää).
+   * Pakan ja käsikorttien loputtua pelataan 3 avointa pöytäkorttia.
+   * Viimeisenä käännetään 3 sokkokorttia pöydästä yksi kerrallaan. Jos sokkokortti ei sovi pöytään, pelaaja joutuu nostamaan koko pinon ja kortin käteensä.
+
+---
+
+### 2. Valepaskahousu (Valepaska)
 Valepaskassa kortit lyödään pöytään **kuvapuoli alaspäin**.
 
-1. Vuorossa oleva valitsee kädestään 1–4 korttia ja ilmoittaa ääneen, mitä kortteja väittää lyövänsä (esim. *"Kaksi kasia"* tai *"Yksi rouva"*).
-2. Väitteen täytyy olla sääntöjen mukainen, mutta **kortit saavat olla täyttä valetta**!
+1. Vuorossa oleva valitsee 1–4 korttia ja ilmoittaa ääneen väitteensä (esim. *"Kaksi kasia"* tai *"Yksi rouva"*).
+2. Väitteen täytyy olla laillinen pöytään nähden, mutta **kortit saavat olla täyttä valetta**!
 3. Muille pelaajille avautuu **haastoikkuna**:
-   * **Haasto! (⚡):** Kuka tahansa voi haastaa väitteen.
-     * Jos pelaaja **valehteli**: Valehtelija joutuu nostamaan **koko pöytäpakan** käteensä! Vuoro siirtyy valehtelijasta seuraavalle.
-     * Jos pelaaja **puhui totta**: Haastaja joutuu nostamaan **koko pöytäpakan** rangaistukseksi! Rehellinen pelaaja saa jatkaa vuoroaan ja lyödä tyhjään pöytään.
-   * **Uskon (👍):** Jos kukaan ei haasta, kortit jäävät piiloon ja vuoro jatkuu. Jos ilmoitettu siirto oli kaatokortti (kymppi, ässä tai neloset), pakka kaatuu sivuun ja pelaaja saa uuden vuoron!
-4. Vuoron päätteeksi käsi täydennetään nostopakasta aina 5 korttiin asti.
+   * **Haasto (⚡):** Kuka tahansa voi haastaa väitteen.
+     * Jos pelaaja **valehteli**: Valehtelija nostaa koko pakan käteensä!
+     * Jos pelaaja **puhui totta**: Haastaja nostaa koko pakan rangaistukseksi, ja rehellinen pelaaja saa uuden vuoron tyhjään pöytään.
+   * **Passaus (👍):** Jos kukaan ei haasta, kortit jäävät pinoon ja peli jatkuu.
 
 ---
 
-### 2. Paskahousu (Avopeli)
-Perinteisessä avopaskahousussa kaikki kortit pelataan avoimesti kuvapuoli ylöspäin.
-* Seuraavan pelaajan on lyötävä vähintään yhtä suuri kortti kuin edellinen.
-* Jos sopivaa korttia ei ole tai sitä ei halua pelata:
-  * **Käännä pakasta:** Pelaaja kääntää nostopakan päällimmäisen kortin. Jos se sopii, se pelataan automaattisesti. Jos ei sovi, pelaaja joutuu nostamaan koko pinon ja käännetyn kortin käteensä.
-  * **Nosta pöytä:** Pelaaja voi vapaaehtoisesti nostaa pakan käteensä.
-* Pakka kaatuu kympillä, ässällä tai neljällä samalla, jolloin kaataja saa lyödä uudelleen tyhjään pöytään.
+### 3. Paskahousu (Avopeli)
+Kaikki kortit pelataan avoimesti kuvapuoli ylöspäin.
+* Pöytään on lyötävä aina vähintään yhtä suuri tai yhtä monta samaa korttia kuin edellinen.
+* Jos sopivaa korttia ei ole:
+  * **Käännä pakasta:** Pelaaja kääntää nostopakan päällimmäisen kortin. Jos se sopii, se pelataan automaattisesti; jos ei sovi, pelaaja nostaa pöydän ja käännetyn kortin.
+  * **Nosta pöytä:** Pelaaja voi nostaa pakan vapaaehtoisesti käteensä.
 
 ---
 
-### 👑 Voittaminen ja Paskahousun kruunaus
-* Pelaaja, joka pääsee ensimmäisenä eroon kaikista korteistaan (kun nostopakka on loppunut), on **Voittaja (#1)**!
-* Peli jatkuu muiden kesken, kunnes vain **yhdellä pelaajalla** on kortteja kädessä.
-* Viimeinen kortteja pitelevä pelaaja häviää ja on virallinen **PASKAHOUSU**! 💩👖
+## ✨ Ominaisuudet
+
+* 📱 **Mobile-First käyttöliittymä:** Hiottu toimimaan sulavasti puhelimilla (pysty- ja vaakatilassa), tableteilla ja tietokoneilla.
+* 🤖 **Älykkäät AI-botit:** Pekka, Jari, Sirpa, Matti, Kerttu, Teemu, Sanna ja Ville pelaavat ihmismäisesti, bluffaavat ja haastavat todennäköisyyksien mukaan.
+* 🎵 **Musiikkisoitin:** 13 kappaleen The Weeknd & Swedish House Mafia -soitin taustamusiikille (oletuksena *Lost in the Fire*). Omat äänenvoimakkuus- ja kappalevalikot.
+* 🔊 **Web Audio API -äänet:** Autenttiset korttiäänet, haastohälytykset, summerit, fanfaarit ja ikoninen Paskahousun vesivessan huuhtelu.
+* 💬 **Reaaliaikainen chat & pika-reaktiot:** 💩, 🤥, 😂, 🔥, 👀, 👍.
+* ⚙️ **Säädettävät kotisäännöt:** Kakkossääntö, tyhjän pöydän kymppisääntö, seiskan sääntö ja haastoajan pituus.
 
 ---
 
-## 🏫 Koulun / yliopiston `public_html` -kansiossa hostaus
+## 🧪 Testaus & Laadunvarmistus (CI/CD)
 
-Voit hostata peliä koulusi tai yliopistosi kotisivutilassa (`~/public_html/`) kahdella erinomaisella tavalla:
+Projektissa on kattava automaattinen testipatteristo (`unittest`), joka varmistaa sääntömoottorin toiminnan, kaadot, bottien tekoälyn ja suorittaa kymmeniä simulaatiopelejä:
 
-### Tapa 1: Staattinen frontend `public_html` + ilmainen pilvibackend (Suositeltavin tapa)
-Koulun `public_html` -hakemistoa pyörittävä palvelin (usein Apache) tarjoilee staattiset tiedostot suoraan HTTPS:n yli. Koska moninpeli tarvitsee aktiivisen WebSocket-palvelimen, helpoin ja vakain tapa on:
-
-1. Kopioi `static/`-kansion sisältö koulun palvelimelle, esim. `~/public_html/valepaska/`:
-   ```bash
-   scp -r static/* kayttaja@koulupalvelin.fi:~/public_html/valepaska/
-   ```
-2. Laita `server.py` pyörimään ilmaiseksi pilveen (esim. ilmainen **Render.com**, **Railway** tai omalla koneellasi `ngrok`):
-   * Renderissä: Uusi *Web Service* -> yhdistä repo tai kansio -> Start command: `python3 server.py`. Saat osoitteen, esim. `https://valepaskahousu.onrender.com`.
-3. Nyt voit avata pelin koulusi osoitteesta suoraan parametrilla:
-   `https://users.koulupalvelin.fi/~kayttaja/valepaska/?server=valepaskahousu.onrender.com`
-   Tai voit asettaa palvelinosoitteen suoraan käyttöliittymän ⚙️-napista!
-
-### Tapa 2: Python-palvelin koulun shell-koneella + `.htaccess` -proxy
-Jos koulussasi on SSH-pääsy shell-palvelimeen (kuten monissa suomalaisissa yliopistoissa ja korkeakouluissa):
-1. Kirjaudu SSH:lla koulun palvelimelle ja käynnistä taustaprosessi:
-   ```bash
-   screen -S paskahousu python3 server.py --port 8989
-   # Irrottaudu screenistä painamalla: Ctrl+A, sitten D
-   ```
-2. Laita `~/public_html/valepaska/.htaccess` -tiedostoon:
-   ```apache
-   RewriteEngine On
-   RewriteCond %{HTTP:Upgrade} websocket [NC]
-   RewriteCond %{HTTP:Connection} upgrade [NC]
-   RewriteRule ^ws(.*)$ ws://localhost:8989/ws$1 [P,L]
-   RewriteRule ^api/(.*)$ http://localhost:8989/api/$1 [P,L]
-   ```
-   Nyt koulun Apache-palvelin ohjaa WebSocket- ja API-pyynnöt suoraan taustalla pyörivälle Python-palvelimellesi!
-
----
-
-## 🛠 Tiedostorakenne / Architecture
-
-```
-Pelihuone/
-├── .github/workflows/ci.yml # GitHub Actions automaattinen CI/testausputki
-├── server.py              # Pure Python 3 async HTTP + RFC 6455 WebSocket palvelin
-├── game_engine.py         # Paskahousun, Valepaskan ja Arabian sääntömoottori
-├── room_manager.py        # Moninpelihuoneet, pelaajasessiot, ajastimet ja viestintä
-├── bot_ai.py              # Ihmismäiset AI-botit ja simulaatiot
-├── tests/                 # Kattava automaattitestipatteristo (unittest)
-│   ├── test_game_engine.py # Sääntöjen, korttien ja kaatojen yksikkötestit
-│   ├── test_bot_ai.py     # Botin päätöksenteon ja simulaatiopelien testit
-│   └── test_server.py     # Huonehallinnan ja staattisten tiedostojen eheystestit
-├── static/
-│   ├── index.html         # Pelin käyttöliittymä (Lobby, pelipöytä, haastoruudut)
-│   ├── style.css          # Kasinohuopateema, korttianimaatiot, responsiivisuus
-│   ├── app.js             # Client-logiikka, WebSockets, korttien valinta
-│   ├── cards.js           # SVG-vektori pelikorttigeneraattori
-│   └── audio.js           # Web Audio API ääniefektit (ei riippuvuuksia)
-└── README.md              # Tämä ohjetiedosto
-```
-
----
-
-## 🧪 Testaus ja Laadunvarmistus / Testing & CI
-
-Projektissa on automaattinen testipatteristo (`unittest`), joka testaa sääntömoottorin, bottien tekoälyn ja suorittaa kymmeniä simulaatiopelejä:
-
+### Aja testit paikallisesti:
 ```bash
-# Aja kaikki testit paikallisesti:
 python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-GitHub Actions -putki (`.github/workflows/ci.yml`) ajaa nämä testit automaattisesti aina kun koodia pushataan `main`- tai `test*`-haaroihin sekä ennen kuin Pull Request yhdistetään `main`-haaraan.
+### GitHub Actions -testiputki:
+Projektin [`.github/workflows/ci.yml`](.github/workflows/ci.yml) ajaa testit automaattisesti jokaisen pushin ja Pull Requestin yhteydessä:
+* Testaa Python-versiot **3.10, 3.11 ja 3.12**.
+* Tarkistaa syntaksin (`py_compile`).
+* Varmistaa staattisten tiedostojen ja linkitysten eheyden.
 
-Hauskoja pelihetkiä kavereiden kanssa! 🃏🔥
+---
 
+## 🛠 Tiedostorakenne
+
+```
+Pelihuone/
+├── .github/workflows/ci.yml # GitHub Actions automaattinen testiputki
+├── server.py              # Pure Python 3 async HTTP + WebSocket palvelin
+├── game_engine.py         # Sääntömoottori (Paskahousu, Valepaska, Arabia)
+├── room_manager.py        # Moninpelihuoneet, bottien vuorot ja synkronointi
+├── bot_ai.py              # Tekoälylogiikka ja pelisimulaatiot
+├── render.yaml            # Render.com -palvelinmääritys
+├── tests/                 # Automaattiset yksikkö- ja simulaatiotestit
+│   ├── test_game_engine.py # Sääntö- ja mekaniikkatestit
+│   ├── test_bot_ai.py     # Tekoäly- ja simulaatiotestit
+│   └── test_server.py     # Palvelin- ja tiedostoeheystestit
+├── static/
+│   ├── index.html         # Pelin käyttöliittymä
+│   ├── style.css          # Kasinohuopateema ja animaatiot
+│   ├── app.js             # Client-logiikka, WebSockets, musiikkisoitin
+│   ├── cards.js           # SVG-vektori pelikortit
+│   ├── audio.js           # Ääniefektit
+│   └── *.m4a              # Taustamusiikkiraidat (AAC)
+└── README.md              # Tämä ohjetiedosto
+```
+
+Hauskoja pelihetkiä pelihuoneessa! 🃏🔥
