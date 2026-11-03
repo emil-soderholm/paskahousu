@@ -285,6 +285,32 @@ class GameApp {
       }
     });
 
+    // Deselect cards when clicking or tapping anywhere outside cards and controls
+    document.addEventListener('click', (e) => {
+      const hasSelection = (
+        this.selectedCardIndices.size > 0 ||
+        this.selectedTableUpIndices.size > 0 ||
+        this.selectedHandSwapIndex !== null ||
+        this.selectedTableSwapIndex !== null
+      );
+      if (!hasSelection) return;
+
+      const isCardOrControl = e.target.closest(
+        '.playing-card, .table-slot-up, .table-slot-down, .table-slot, ' +
+        '.action-btn, .action-buttons-dock, button, input, textarea, select, ' +
+        '.modal-overlay, .modal, .modal-content, .chat-panel, .table-chat-bar, ' +
+        '.table-chat-popover, .app-header, .music-player, .deck-station, #playPileArea'
+      );
+
+      if (!isCardOrControl) {
+        this.selectedCardIndices.clear();
+        this.selectedTableUpIndices.clear();
+        this.selectedHandSwapIndex = null;
+        this.selectedTableSwapIndex = null;
+        this.render();
+      }
+    });
+
     if (tableQuickChatForm && tableQuickChatInput) {
       tableQuickChatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -1009,6 +1035,7 @@ class GameApp {
 
     if (newState.dead_pile_count > oldState.dead_pile_count) {
       window.sounds.playKaatuu();
+      this.showKaatoCelebration(newState.last_action_info);
     }
 
     if (newState.play_pile.length > oldState.play_pile.length) {
@@ -1022,6 +1049,84 @@ class GameApp {
     if (newState.status === 'GAME_OVER' && oldState.status !== 'GAME_OVER') {
       window.sounds.playToiletFlush();
     }
+  }
+
+  showKaatoCelebration(info) {
+    const kaatoOverlay = document.getElementById('kaatoOverlay');
+    if (!kaatoOverlay) return;
+
+    const feltTable = document.querySelector('.felt-table-wrapper');
+    const deadPile = document.getElementById('deadPileArea');
+
+    // Trigger table screen shake
+    if (feltTable) {
+      feltTable.classList.remove('table-shake');
+      void feltTable.offsetWidth; // trigger reflow
+      feltTable.classList.add('table-shake');
+      setTimeout(() => feltTable.classList.remove('table-shake'), 600);
+    }
+
+    // Trigger dead pile fire flash
+    if (deadPile) {
+      deadPile.classList.remove('kaato-impact');
+      void deadPile.offsetWidth; // trigger reflow
+      deadPile.classList.add('kaato-impact');
+      setTimeout(() => deadPile.classList.remove('kaato-impact'), 1400);
+    }
+
+    const titleEl = document.getElementById('kaatoTitle');
+    const detailsEl = document.getElementById('kaatoDetails');
+    const subDetailsEl = document.getElementById('kaatoSubDetails');
+    const iconEl = document.getElementById('kaatoIcon');
+
+    let titleText = 'KAATUU! 🔥';
+    let detailsText = 'Pöytä kaadettiin sivuun!';
+    let subText = 'Uusi vuoro aloittajalle puhtaalta pöydältä';
+    let icon = '🔥';
+
+    if (info && info.type === 'kaato') {
+      const pName = info.player_name || 'Pelaaja';
+      const rank = info.declared_rank;
+      const count = info.cards_count || 1;
+      const cleared = info.cleared_count ? ` (${info.cleared_count} korttia)` : '';
+
+      if (count >= 4) {
+        titleText = 'NELOSET KAATAA! 💥';
+        icon = '💥';
+        detailsText = `${pName} löi 4x samaa korttia ja kaatoi pöydän${cleared}!`;
+      } else if (rank === '10') {
+        titleText = 'KYMPPI KAATAA! 🔥';
+        icon = '🔟';
+        detailsText = `${pName} kaatoi pöydän kympillä${cleared}!`;
+      } else if (rank === 'A') {
+        titleText = 'ÄSSÄ KAATAA! ⚡';
+        icon = '🅰️';
+        detailsText = `${pName} kaatoi pöydän ässällä${cleared}!`;
+      } else {
+        titleText = 'KAATUU! 🔥';
+        icon = '🔥';
+        detailsText = `${pName} kaatoi pöydän${cleared}!`;
+      }
+      subText = `Vuoro jatkuu — ${pName} aloittaa puhtaalta pöydältä!`;
+    }
+
+    if (titleEl) titleEl.textContent = titleText;
+    if (detailsEl) detailsEl.textContent = detailsText;
+    if (subDetailsEl) subDetailsEl.textContent = subText;
+    if (iconEl) iconEl.textContent = icon;
+
+    kaatoOverlay.style.display = 'flex';
+    kaatoOverlay.classList.remove('fade-out');
+    kaatoOverlay.classList.add('animate-in');
+
+    if (this._kaatoTimeout) clearTimeout(this._kaatoTimeout);
+    this._kaatoTimeout = setTimeout(() => {
+      kaatoOverlay.classList.add('fade-out');
+      setTimeout(() => {
+        kaatoOverlay.style.display = 'none';
+        kaatoOverlay.classList.remove('animate-in', 'fade-out');
+      }, 400);
+    }, 2000);
   }
 
   /* ==========================================================================
@@ -1400,7 +1505,8 @@ class GameApp {
           if (isPhaseBlind && !upCard && isMyTurn) {
             slotEl.classList.add('blind-active');
             slotEl.title = 'Käännä sokkokortti pöytään!';
-            slotEl.addEventListener('click', () => {
+            slotEl.addEventListener('click', (e) => {
+              e.stopPropagation();
               window.sounds.playPop();
               this.sendWS({
                 type: 'play_blind_card',
@@ -1569,7 +1675,8 @@ class GameApp {
             }, { passive: true });
           }
 
-          cardEl.addEventListener('click', () => {
+          cardEl.addEventListener('click', (e) => {
+            e.stopPropagation();
             const canSwap = this.state.rules.mode === 'arabia' && me && !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
             if (canSwap && this.selectedTableSwapIndex !== null) {
               this.sendWS({

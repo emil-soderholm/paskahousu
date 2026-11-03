@@ -683,12 +683,14 @@ class GameState:
 
             # Check Kaato (clearing pile)
             if clears:
-                self._clear_pile_kaatuu(player)
+                self._clear_pile_kaatuu(player, declared_rank=declared_rank, cards_count=len(played_cards))
                 return {"success": True, "cleared": True}
 
             # In Arabia: if player plays a 2, the same player gets to immediately play another card on top of the 2!
             if self.rules.mode == "arabia" and declared_rank == '2':
-                if source == "hand":
+                # Realistic card drawing: hand is not refilled while turn continues,
+                # unless hand is completely empty and draw deck has cards.
+                if source == "hand" and len(player.hand) == 0 and self.draw_deck:
                     self._refill_hand(player)
                 self._check_player_out(player)
                 if self.status != "GAME_OVER":
@@ -759,7 +761,7 @@ class GameState:
 
             clears = self.will_move_clear_pile(card.rank, 1)
             if clears:
-                self._clear_pile_kaatuu(player)
+                self._clear_pile_kaatuu(player, declared_rank=card.rank, cards_count=1)
                 return {"success": True, "legal": True, "card": card.to_dict(), "cleared": True}
 
             # In Arabia: if blind card is a 2, player continues their turn!
@@ -823,7 +825,7 @@ class GameState:
         # Turn passes to the player AFTER victim
         self.current_player_idx = self._next_player_idx(next_idx)
 
-    def _clear_pile_kaatuu(self, player: Player):
+    def _clear_pile_kaatuu(self, player: Player, declared_rank: Optional[str] = None, cards_count: int = 1):
         """Pile clears (Kaatuu) to dead pile. The player plays again!"""
         self.first_kaato_done = True
         cleared_count = len(self.play_pile)
@@ -831,13 +833,25 @@ class GameState:
         self.play_pile = []
         player.stats["piles_cleared"] += 1
 
+        self.last_action_info = {
+            "type": "kaato",
+            "player_id": player.id,
+            "player_name": player.name,
+            "declared_rank": declared_rank,
+            "cards_count": cards_count,
+            "cleared_count": cleared_count
+        }
+
         self.add_log(
             f"KAATUU! Pakka kaadettiin sivuun ({cleared_count} korttia). {player.name} saa uuden vuoron!",
             f"PILE CLEARED! ({cleared_count} cards discarded). {player.name} plays again!",
             "kaatuu"
         )
 
-        self._refill_hand(player)
+        # Realistic replenishment: cards are drawn at the end of the turn.
+        # Only refill during kaato if hand became completely empty and draw deck has cards.
+        if len(player.hand) == 0 and self.draw_deck:
+            self._refill_hand(player)
         self._check_player_out(player)
         if self.status != "GAME_OVER":
             # If player went out after kaatuu, advance turn to next player
@@ -998,6 +1012,15 @@ class GameState:
             self.play_pile = []
             player.stats["piles_cleared"] += 1
 
+            self.last_action_info = {
+                "type": "kaato",
+                "player_id": player.id,
+                "player_name": player.name,
+                "declared_rank": cs.declared_rank,
+                "cards_count": len(cs.played_cards),
+                "cleared_count": cleared_count
+            }
+
             self.add_log(
                 f"KAATUU! '{cs.declared_rank}' hyväksyttiin ja pakka kaatui ({cleared_count} korttia)! {player.name} saa uuden vuoron.",
                 f"PILE CLEARED! '{cs.declared_rank}' accepted and pile cleared ({cleared_count} cards)! {player.name} plays again.",
@@ -1006,7 +1029,8 @@ class GameState:
 
             self.challenge_state = None
             self.status = "PLAYING"
-            self._refill_hand(player)
+            if len(player.hand) == 0 and self.draw_deck:
+                self._refill_hand(player)
             self._check_player_out(player)
             if player.is_out:
                 self._advance_turn()
@@ -1058,12 +1082,13 @@ class GameState:
             # Check if this card clears the pile
             clears = self.will_move_clear_pile(card.rank, 1)
             if clears:
-                self._clear_pile_kaatuu(player)
+                self._clear_pile_kaatuu(player, declared_rank=card.rank, cards_count=1)
                 return {"success": True, "fit": True, "card": card.to_dict(), "cleared": True}
 
             # In Arabia: if flipped card is 2, player continues their turn!
             if self.rules.mode == "arabia" and card.rank == '2':
-                self._refill_hand(player)
+                if len(player.hand) == 0 and self.draw_deck:
+                    self._refill_hand(player)
                 self._check_player_out(player)
                 if self.status != "GAME_OVER":
                     if player.is_out:
