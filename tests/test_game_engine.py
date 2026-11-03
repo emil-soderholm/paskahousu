@@ -203,6 +203,38 @@ class TestArabiaRules(unittest.TestCase):
         self.assertTrue(res.get("continue_turn"))
         # Same player continues
         self.assertEqual(self.game.current_player(), curr)
+        # Hand is NOT refilled while turn continues (player still holds the 4)
+        self.assertEqual(len(curr.hand), 1)
+        self.assertEqual(curr.hand[0].rank, "4")
+
+        # Now play the 4
+        res2 = self.game.play_cards(curr.id, [0], "4")
+        self.assertTrue(res2["success"])
+        self.assertFalse(res2.get("continue_turn", False))
+        # Turn ends, hand is refilled at end of turn
+        self.assertNotEqual(self.game.current_player(), curr)
+        self.assertEqual(len(curr.hand), 3)
+
+    def test_kaato_defers_hand_refill_until_turn_ends(self):
+        curr = self.game.current_player()
+        self.game.play_pile.append(PlayedCardEntry(Card("♦", "7"), "7", "other", False))
+        curr.hand = [Card("♠", "10"), Card("♥", "5"), Card("♦", "8")]
+
+        # Play 10 to clear the pile
+        res = self.game.play_cards(curr.id, [0], "10")
+        self.assertTrue(res["success"])
+        self.assertTrue(res.get("cleared"))
+        # Player continues on empty table
+        self.assertEqual(self.game.current_player(), curr)
+        # Hand is NOT refilled yet because player still holds cards
+        self.assertEqual(len(curr.hand), 2)
+
+        # Player plays the 5 to empty table
+        res2 = self.game.play_cards(curr.id, [0], "5")
+        self.assertTrue(res2["success"])
+        # Turn ends, turn advances and hand is refilled
+        self.assertNotEqual(self.game.current_player(), curr)
+        self.assertEqual(len(curr.hand), 3)
 
     def test_table_up_requires_empty_hand_and_deck(self):
         curr = self.game.current_player()

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Tuutan ja Emailin pelihuane</title>
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=11">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -262,6 +262,17 @@
           </div>
         </div>
 
+        <!-- Kaato (Pile Cleared) Celebration Overlay -->
+        <div id="kaatoOverlay" class="kaato-overlay" style="display:none;">
+          <div class="kaato-fire-burst"></div>
+          <div class="kaato-modal-box">
+            <div class="kaato-icon-badge" id="kaatoIcon">🔥</div>
+            <div id="kaatoTitle" class="kaato-title">KAATUU!</div>
+            <div id="kaatoDetails" class="kaato-sub">Pöytä kaadettiin sivuun!</div>
+            <div id="kaatoSubDetails" class="kaato-extra">Uusi vuoro puhtaalta pöydältä</div>
+          </div>
+        </div>
+
         <!-- Player Station (Bottom Area) -->
         <div class="player-station">
           <div id="myBubbleAnchor" class="table-bubble-anchor my-bubble-anchor"></div>
@@ -483,8 +494,8 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=9"></script>
-  <script src="audio.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="cards.js?v=11"></script>
+  <script src="audio.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
