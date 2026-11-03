@@ -510,58 +510,162 @@ class GameApp {
 
   initMusic() {
     this.musicPlayer = document.getElementById('bgMusicPlayer');
-    const musicBtn = document.getElementById('musicToggleBtn');
-    const volumeSlider = document.getElementById('musicVolumeSlider');
-    const widget = document.querySelector('.music-widget');
-
     if (!this.musicPlayer) return;
+
+    this.playlist = [
+      {
+        id: 'lost_in_the_fire',
+        title: 'Lost in the Fire',
+        artist: 'Gesaffelstein & The Weeknd',
+        file: 'music.m4a',
+        fallback: 'music.mp3'
+      },
+      {
+        id: 'blinding_lights',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        file: 'blinding_lights.m4a',
+        fallback: 'blinding_lights.mp3'
+      },
+      {
+        id: 'starboy',
+        title: 'Starboy',
+        artist: 'The Weeknd ft. Daft Punk',
+        file: 'starboy.m4a',
+        fallback: 'starboy.mp3'
+      },
+      {
+        id: 'save_your_tears',
+        title: 'Save Your Tears',
+        artist: 'The Weeknd',
+        file: 'save_your_tears.m4a',
+        fallback: 'save_your_tears.mp3'
+      },
+      {
+        id: 'the_hills',
+        title: 'The Hills',
+        artist: 'The Weeknd',
+        file: 'the_hills.m4a',
+        fallback: 'the_hills.mp3'
+      },
+      {
+        id: 'cant_feel_my_face',
+        title: "Can't Feel My Face",
+        artist: 'The Weeknd',
+        file: 'cant_feel_my_face.m4a',
+        fallback: 'cant_feel_my_face.mp3'
+      },
+      {
+        id: 'die_for_you',
+        title: 'Die For You',
+        artist: 'The Weeknd',
+        file: 'die_for_you.m4a',
+        fallback: 'die_for_you.mp3'
+      },
+      {
+        id: 'heartless',
+        title: 'Heartless',
+        artist: 'The Weeknd',
+        file: 'heartless.m4a',
+        fallback: 'heartless.mp3'
+      }
+    ];
+
+    // Find saved track or default to 0 ('lost_in_the_fire')
+    const savedTrackId = localStorage.getItem('valepaska_selected_track');
+    let initialIndex = this.playlist.findIndex(t => t.id === savedTrackId);
+    if (initialIndex === -1) initialIndex = 0;
+    this.currentTrackIndex = initialIndex;
 
     // Load saved volume (default 0.35)
     const savedVol = localStorage.getItem('valepaska_music_vol');
     if (savedVol !== null) {
       this.musicPlayer.volume = Math.max(0.05, parseFloat(savedVol));
-      if (volumeSlider) volumeSlider.value = savedVol;
     } else {
       this.musicPlayer.volume = 0.35;
-      if (volumeSlider) volumeSlider.value = '0.35';
     }
 
-    const updateUI = () => {
-      const isPlaying = !this.musicPlayer.paused;
-      if (widget) widget.classList.toggle('playing', isPlaying);
-      if (musicBtn) musicBtn.textContent = isPlaying ? '🎶' : '🎵';
-    };
-
-    if (musicBtn) {
-      musicBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (this.musicPlayer.paused) {
-          this.musicPlayer.play().then(() => {
-            localStorage.setItem('valepaska_music_on', 'true');
-            updateUI();
-          }).catch(e => {
-            console.warn('Musiikin toisto vaatii tiedoston static/music.mp3:', e);
-          });
-        } else {
-          this.musicPlayer.pause();
-          localStorage.setItem('valepaska_music_on', 'false');
-          updateUI();
-        }
-      });
-    }
-
-    if (volumeSlider) {
-      volumeSlider.addEventListener('input', (e) => {
+    const modalVolumeSlider = document.getElementById('musicModalVolumeSlider');
+    if (modalVolumeSlider) {
+      modalVolumeSlider.value = this.musicPlayer.volume.toString();
+      modalVolumeSlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         this.musicPlayer.volume = val;
         localStorage.setItem('valepaska_music_vol', val.toString());
       });
-      volumeSlider.addEventListener('click', (e) => e.stopPropagation());
     }
 
-    // Default to true: Lost in the Fire plays automatically!
-    const shouldPlay = localStorage.getItem('valepaska_music_on') !== 'false';
+    // Modal elements
+    const musicModal = document.getElementById('musicMenuModal');
+    const musicMenuBtn = document.getElementById('musicMenuBtn');
+    const closeMusicBtn = document.getElementById('closeMusicMenuBtn');
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    const prevBtn = document.getElementById('musicPrevBtn');
+    const nextBtn = document.getElementById('musicNextBtn');
 
+    if (musicMenuBtn && musicModal) {
+      musicMenuBtn.addEventListener('click', () => {
+        this.renderMusicPlaylist();
+        musicModal.classList.add('active');
+      });
+    }
+
+    if (closeMusicBtn && musicModal) {
+      closeMusicBtn.addEventListener('click', () => {
+        musicModal.classList.remove('active');
+      });
+    }
+
+    if (musicModal) {
+      musicModal.addEventListener('click', (e) => {
+        if (e.target === musicModal) {
+          musicModal.classList.remove('active');
+        }
+      });
+    }
+
+    if (playPauseBtn) {
+      playPauseBtn.addEventListener('click', () => {
+        if (this.musicPlayer.paused) {
+          this.musicPlayer.play().then(() => {
+            localStorage.setItem('valepaska_music_on', 'true');
+            this.updateMusicUI();
+          }).catch(err => {
+            console.warn('Playback error:', err);
+          });
+        } else {
+          this.musicPlayer.pause();
+          localStorage.setItem('valepaska_music_on', 'false');
+          this.updateMusicUI();
+        }
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        this.currentTrackIndex = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
+        this.loadAndPlayTrack(this.currentTrackIndex, true);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
+        this.loadAndPlayTrack(this.currentTrackIndex, true);
+      });
+    }
+
+    // Auto play next track when current ends
+    this.musicPlayer.addEventListener('ended', () => {
+      this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
+      this.loadAndPlayTrack(this.currentTrackIndex, true);
+    });
+
+    this.musicPlayer.addEventListener('play', () => this.updateMusicUI());
+    this.musicPlayer.addEventListener('pause', () => this.updateMusicUI());
+
+    // Gesture listeners for autoplay
+    const shouldPlay = localStorage.getItem('valepaska_music_on') !== 'false';
     const gestureEvents = ['click', 'pointerdown', 'touchstart', 'keydown', 'mousedown'];
 
     const removeGestureListeners = () => {
@@ -579,30 +683,105 @@ class GameApp {
       if (p !== undefined) {
         p.then(() => {
           localStorage.setItem('valepaska_music_on', 'true');
-          updateUI();
+          this.updateMusicUI();
           removeGestureListeners();
-        }).catch(() => {
-          // Waiting for user gesture or audio buffer
-        });
+        }).catch(() => {});
       }
     };
 
-    // Attach persistent listeners until successfully playing
     gestureEvents.forEach(evt => {
       document.addEventListener(evt, startMusic, { capture: true });
       window.addEventListener(evt, startMusic, { capture: true });
     });
 
-    this.musicPlayer.addEventListener('canplay', startMusic);
-    this.musicPlayer.addEventListener('loadeddata', startMusic);
-
-    // Try playing immediately on load
-    if (shouldPlay) {
-      startMusic();
+    // Initial setup
+    if (this.currentTrackIndex > 0) {
+      this.loadAndPlayTrack(this.currentTrackIndex, shouldPlay);
+    } else {
+      this.updateMusicUI();
+      if (shouldPlay) startMusic();
     }
+  }
 
-    this.musicPlayer.addEventListener('play', updateUI);
-    this.musicPlayer.addEventListener('pause', updateUI);
+  loadAndPlayTrack(index, autoplay = true) {
+    if (!this.playlist || !this.playlist[index] || !this.musicPlayer) return;
+    this.currentTrackIndex = index;
+    const track = this.playlist[index];
+    localStorage.setItem('valepaska_selected_track', track.id);
+
+    // Update audio source
+    this.musicPlayer.innerHTML = `
+      <source src="${track.file}" type="audio/mp4">
+      <source src="${track.fallback}" type="audio/mpeg">
+    `;
+    this.musicPlayer.load();
+
+    if (autoplay && localStorage.getItem('valepaska_music_on') !== 'false') {
+      const p = this.musicPlayer.play();
+      if (p !== undefined) {
+        p.then(() => {
+          this.updateMusicUI();
+        }).catch(err => {
+          console.warn(`Tiedostoa ${track.file} ei voitu toistaa. Varmista että se on static/-kansiossa!`, err);
+        });
+      }
+    }
+    this.updateMusicUI();
+    this.renderMusicPlaylist();
+  }
+
+  updateMusicUI() {
+    if (!this.musicPlayer || !this.playlist) return;
+    const isPlaying = !this.musicPlayer.paused;
+    const track = this.playlist[this.currentTrackIndex] || this.playlist[0];
+
+    const headerTitle = document.getElementById('headerTrackTitle');
+    if (headerTitle) headerTitle.textContent = track.title;
+
+    const modalTitle = document.getElementById('modalTrackTitle');
+    if (modalTitle) modalTitle.textContent = track.title;
+
+    const modalArtist = document.getElementById('modalTrackArtist');
+    if (modalArtist) modalArtist.textContent = track.artist;
+
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = isPlaying ? '⏸' : '▶';
+
+    const equalizer = document.getElementById('musicEqualizer');
+    if (equalizer) equalizer.classList.toggle('playing', isPlaying);
+
+    const musicBtnIcon = document.getElementById('musicBtnIcon');
+    if (musicBtnIcon) musicBtnIcon.textContent = isPlaying ? '🎶' : '🎵';
+  }
+
+  renderMusicPlaylist() {
+    const container = document.getElementById('musicPlaylistContainer');
+    if (!container || !this.playlist) return;
+    container.innerHTML = '';
+
+    const isPlaying = this.musicPlayer && !this.musicPlayer.paused;
+
+    this.playlist.forEach((track, idx) => {
+      const isCurrent = (idx === this.currentTrackIndex);
+      const row = document.createElement('div');
+      row.className = `playlist-track-row ${isCurrent ? 'active' : ''}`;
+      row.innerHTML = `
+        <div class="track-row-left">
+          <span class="track-play-icon">${isCurrent && isPlaying ? '🎶' : (isCurrent ? '⏸' : '▶')}</span>
+          <div class="track-info">
+            <span class="track-name">${track.title}</span>
+            <span class="track-sub">${track.artist}</span>
+          </div>
+        </div>
+        ${isCurrent ? `<span class="track-badge">${isPlaying ? 'Soi nyt' : 'Valittu'}</span>` : ''}
+      `;
+
+      row.addEventListener('click', () => {
+        this.loadAndPlayTrack(idx, true);
+      });
+
+      container.appendChild(row);
+    });
   }
 
   getApiBase() {
@@ -1035,15 +1214,19 @@ class GameApp {
 
       seat.innerHTML = `
         <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
-        <div class="opponent-avatar-box">
-          ${p.avatar}
-          <div class="opponent-cards-badge">🂠 ${p.card_count}</div>
+        <div class="opponent-seat-inner">
+          <div class="opponent-identity">
+            <div class="opponent-avatar-box">
+              ${p.avatar}
+              <div class="opponent-cards-badge">🂠 ${p.card_count}</div>
+            </div>
+            <div class="opponent-name">${p.name}</div>
+            <div class="opponent-status-tag">
+              ${p.is_out ? `🏆 #${p.finish_rank}` : (this.state.current_player_id === p.id ? (this.lang === 'fi' ? 'VUOROSSA' : 'TURN') : '')}
+            </div>
+          </div>
+          ${oppTableHtml}
         </div>
-        <div class="opponent-name">${p.name}</div>
-        <div class="opponent-status-tag">
-          ${p.is_out ? `🏆 #${p.finish_rank}` : (this.state.current_player_id === p.id ? (this.lang === 'fi' ? 'VUOROSSA' : 'TURN') : '')}
-        </div>
-        ${oppTableHtml}
         ${speechHtml}
       `;
       oppArea.appendChild(seat);
@@ -1179,7 +1362,16 @@ class GameApp {
 
       const canSwap = !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
       if (swapHintTag) {
-        swapHintTag.style.display = canSwap ? 'inline-block' : 'none';
+        swapHintTag.style.display = !this.state.first_kaato_done ? 'inline-block' : 'none';
+        if (canSwap) {
+          swapHintTag.textContent = this.lang === 'fi' 
+            ? '💡 Vaihto sallittu & kuvat (J, Q, K, A) lukittu 1. kaatoon asti' 
+            : '💡 Swapping allowed & court cards (J, Q, K, A) locked until 1st clear';
+        } else {
+          swapHintTag.textContent = this.lang === 'fi'
+            ? '🔒 Kuvat (J, Q, K, A) lukittu 1. kaatoon asti'
+            : '🔒 Court cards (J, Q, K, A) locked until 1st clear';
+        }
       }
 
       const isPhaseTableUp = (!me.hand || me.hand.length === 0) && this.state.draw_deck_count === 0 && (me.table_up && me.table_up.length > 0);
@@ -1513,6 +1705,19 @@ class GameApp {
     if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
       // In Open Paskahousu and Arabia, declared rank is the actual rank of the cards
       const declaredRank = selectedCards[0].rank;
+
+      // In Arabia, court cards (J, Q, K, A) cannot be played before the first kaato
+      if (this.state.rules.mode === 'arabia' && !this.state.first_kaato_done && ['J', 'Q', 'K', 'A'].includes(declaredRank)) {
+        this.showTableBubble({
+          player_id: this.playerId,
+          name: this.playerName,
+          avatar: '🔒',
+          text: this.lang === 'fi' ? 'Kuvakortteja (J, Q, K, A) saa pelata vasta 1. kaadon jälkeen!' : 'Court cards locked until first pile clear!'
+        });
+        window.sounds.playPop();
+        return;
+      }
+
       this.executePlayCards(declaredRank, 'hand');
     } else {
       // In Valepaskahousu, open the Bluff Declaration Modal!

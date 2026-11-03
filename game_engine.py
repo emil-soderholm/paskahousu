@@ -449,14 +449,18 @@ class GameState:
 
     def is_rank_legal_on_pile(self, rank: str, top_entry: Optional[PlayedCardEntry]) -> Tuple[bool, str]:
         """Checks if declared rank can legally be played on the current pile."""
-        if top_entry is None:
-            # Empty table: any card can be played
-            return True, "OK"
-
-        top_rank = top_entry.declared_rank
-
         # Arabia specific rules
         if self.rules.mode == "arabia":
+            # Court cards restriction: court cards (J, Q, K, A) cannot be played before the first kaato
+            if not self.first_kaato_done and (rank in COURT_RANKS or rank == 'A'):
+                return False, "Kuvakortteja (J, Q, K, A) saa pelata vasta ensimmäisen kaadon jälkeen! / Court cards (J, Q, K, A) can only be played after the first pile clear!"
+
+            if top_entry is None:
+                # Empty table: any valid card can be played
+                return True, "OK"
+
+            top_rank = top_entry.declared_rank
+
             # 2 can be played on ANY card
             if rank == '2':
                 return True, "OK"
@@ -472,6 +476,12 @@ class GameState:
             if cur_val < top_val:
                 return False, f"Kortin arvon on oltava vähintään yhtä suuri kuin {top_rank}! / Card must be >= {top_rank}!"
             return True, "OK"
+
+        if top_entry is None:
+            # Empty table: any card can be played
+            return True, "OK"
+
+        top_rank = top_entry.declared_rank
 
         # Standard Paskahousu & Valepaskahousu rules:
         # Rule of 2 (Kakkonen):

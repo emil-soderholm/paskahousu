@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tuutan ja Emailin pelihuane</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
@@ -19,14 +19,14 @@
 
     <div class="header-actions">
       <div id="headerRoomCode" class="icon-btn room-badge" style="display:none;"></div>
-      <button id="leaveGameBtn" class="icon-btn btn-leave-game" style="display:none;" title="Poistu pelistä">🚪 <span data-i18n="leaveGame">Poistu</span></button>
-      <div class="music-widget">
-        <button id="musicToggleBtn" class="icon-btn" title="Taustamusiikki (Päälle / Pois)">🎵</button>
-        <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.05" value="0.3" class="volume-slider" title="Musiikin äänenvoimakkuus">
-      </div>
-      <button id="soundToggleBtn" class="icon-btn" title="Ääniefektit päälle / pois">🔊</button>
-      <button id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
-      <button id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
+      <button id="leaveGameBtn" class="icon-btn btn-leave-game" style="display:none;" title="Poistu pelistä">🚪 <span class="leave-btn-text" data-i18n="leaveGame">Poistu</span></button>
+      <button type="button" id="musicMenuBtn" class="icon-btn music-btn" title="Taustamusiikki (Valikko)">
+        <span id="musicBtnIcon" class="music-icon">🎵</span>
+        <span id="headerTrackTitle" class="header-track-title">Lost in the Fire</span>
+      </button>
+      <button type="button" id="soundToggleBtn" class="icon-btn" title="Ääniefektit päälle / pois">🔊</button>
+      <button type="button" id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
+      <button type="button" id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
     </div>
   </header>
 
@@ -318,6 +318,54 @@
       </div>
     </div>
 
+    <!-- MUSIC PLAYER MENU MODAL -->
+    <div id="musicMenuModal" class="modal-overlay">
+      <div class="modal-content music-modal-content">
+        <div class="music-modal-header">
+          <div class="music-modal-title-group">
+            <span class="music-modal-title-icon">🎵</span>
+            <div>
+              <h2 class="music-modal-title">Taustamusiikki</h2>
+              <div id="modalTrackArtist" class="music-modal-artist">Gesaffelstein & The Weeknd</div>
+            </div>
+          </div>
+          <button type="button" id="closeMusicMenuBtn" class="modal-close-icon-btn">✕</button>
+        </div>
+
+        <!-- Now Playing Bar -->
+        <div class="music-player-panel">
+          <div class="music-equalizer-bar" id="musicEqualizer">
+            <span class="eq-col col-1"></span>
+            <span class="eq-col col-2"></span>
+            <span class="eq-col col-3"></span>
+            <span class="eq-col col-4"></span>
+          </div>
+
+          <div class="music-track-display">
+            <span id="modalTrackTitle" class="now-playing-title">Lost in the Fire</span>
+          </div>
+
+          <div class="music-controls">
+            <button type="button" id="musicPrevBtn" class="music-btn-ctrl" title="Edellinen kappale">⏮</button>
+            <button type="button" id="musicPlayPauseBtn" class="music-btn-ctrl play-pause-main" title="Toista / Keskeytä">⏸</button>
+            <button type="button" id="musicNextBtn" class="music-btn-ctrl" title="Seuraava kappale">⏭</button>
+          </div>
+
+          <div class="music-volume-box">
+            <span class="vol-icon">🔈</span>
+            <input type="range" id="musicModalVolumeSlider" min="0" max="1" step="0.05" value="0.35" class="music-modal-slider" title="Äänenvoimakkuus">
+            <span class="vol-icon">🔊</span>
+          </div>
+        </div>
+
+        <!-- Playlist -->
+        <div class="playlist-section">
+          <div class="playlist-heading">Valitse kappale:</div>
+          <div id="musicPlaylistContainer" class="music-playlist-container"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- IN-GAME CHAT DRAWER -->
     <aside id="chatDrawer" class="chat-drawer">
       <div class="chat-header">
@@ -336,9 +384,9 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=3"></script>
-  <script src="audio.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="cards.js?v=4"></script>
+  <script src="audio.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
 
