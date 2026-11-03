@@ -1,0 +1,55 @@
+name: Tests & Quality Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'test*'
+      - 'test/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Unit Tests & Bot Simulation (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Check Python Syntax (Bytecode Compilation)
+        run: |
+          python3 -m py_compile *.py tests/*.py
+
+      - name: Run Test Suite & Game Simulations
+        run: |
+          python3 -m unittest discover -s tests -p "test_*.py" -v
+
+  asset-integrity:
+    name: Verify Static Assets & Core Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check Asset References in index.html
+        run: |
+          python3 -m unittest tests.test_server.TestStaticAssets -v
+

@@ -138,18 +138,36 @@ Jos koulussasi on SSH-pääsy shell-palvelimeen (kuten monissa suomalaisissa yli
 
 ```
 Pelihuone/
+├── .github/workflows/ci.yml # GitHub Actions automaattinen CI/testausputki
 ├── server.py              # Pure Python 3 async HTTP + RFC 6455 WebSocket palvelin
-├── game_engine.py         # Paskahousun ja Valepaskahousun sääntömoottori ja tilakone
+├── game_engine.py         # Paskahousun, Valepaskan ja Arabian sääntömoottori
 ├── room_manager.py        # Moninpelihuoneet, pelaajasessiot, ajastimet ja viestintä
-├── bot_ai.py              # Ihmismäiset AI-botit (bluffaus ja todennäköisyyshaastot)
+├── bot_ai.py              # Ihmismäiset AI-botit ja simulaatiot
+├── tests/                 # Kattava automaattitestipatteristo (unittest)
+│   ├── test_game_engine.py # Sääntöjen, korttien ja kaatojen yksikkötestit
+│   ├── test_bot_ai.py     # Botin päätöksenteon ja simulaatiopelien testit
+│   └── test_server.py     # Huonehallinnan ja staattisten tiedostojen eheystestit
 ├── static/
 │   ├── index.html         # Pelin käyttöliittymä (Lobby, pelipöytä, haastoruudut)
 │   ├── style.css          # Kasinohuopateema, korttianimaatiot, responsiivisuus
-│   ├── app.js             # Client-logiikka, WebSockets, korttien valinta ja i18n
+│   ├── app.js             # Client-logiikka, WebSockets, korttien valinta
 │   ├── cards.js           # SVG-vektori pelikorttigeneraattori
 │   └── audio.js           # Web Audio API ääniefektit (ei riippuvuuksia)
 └── README.md              # Tämä ohjetiedosto
 ```
+
+---
+
+## 🧪 Testaus ja Laadunvarmistus / Testing & CI
+
+Projektissa on automaattinen testipatteristo (`unittest`), joka testaa sääntömoottorin, bottien tekoälyn ja suorittaa kymmeniä simulaatiopelejä:
+
+```bash
+# Aja kaikki testit paikallisesti:
+python3 -m unittest discover -s tests -p "test_*.py" -v
+```
+
+GitHub Actions -putki (`.github/workflows/ci.yml`) ajaa nämä testit automaattisesti aina kun koodia pushataan `main`- tai `test*`-haaroihin sekä ennen kuin Pull Request yhdistetään `main`-haaraan.
 
 Hauskoja pelihetkiä kavereiden kanssa! 🃏🔥
 
