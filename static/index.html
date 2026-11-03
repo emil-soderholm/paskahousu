@@ -2,35 +2,55 @@
 <html lang="fi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Tuutan ja Emailin pelihuane</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-  <!-- Top App Header -->
+  <!-- App Header -->
   <header class="app-header">
-    <div class="logo-group clickable-logo" id="headerLogoGroup" title="Palaa päävalikkoon / Poistu pelistä">
-      <span class="logo-icon">🃏</span>
-      <span class="logo-text" data-i18n="appTitle">Tuutan ja Emailin pelihuane</span>
+    <div class="header-left">
+      <div class="logo-group" id="headerLogoGroup" title="Päävalikko / Poistu">
+        <span class="logo-icon">🃏</span>
+        <span class="logo-text">Tuutan ja Emailin pelihuane</span>
+      </div>
     </div>
 
-    <div class="header-actions">
-      <div id="headerRoomCode" class="icon-btn room-badge" style="display:none;"></div>
-      <button id="leaveGameBtn" class="icon-btn btn-leave-game" style="display:none;" title="Poistu pelistä">🚪 <span class="leave-btn-text" data-i18n="leaveGame">Poistu</span></button>
-      <button type="button" id="musicMenuBtn" class="icon-btn music-btn" title="Taustamusiikki (Valikko)">
-        <span id="musicBtnIcon" class="music-icon">🎵</span>
+    <div class="header-right">
+      <!-- Active Room Pill (Shown in game/room, tap to copy) -->
+      <button type="button" id="headerRoomCode" class="header-pill room-code-pill" style="display:none;" title="Kutsukoodi (Kopioi klikkaamalla)">
+        <span class="room-pill-icon">🔑</span>
+        <span class="room-pill-text">----</span>
+      </button>
+
+      <!-- Music Player Button -->
+      <button type="button" id="musicMenuBtn" class="header-pill music-pill" title="Taustamusiikki (Avaa valikko)">
+        <span id="musicBtnIcon" class="music-note-icon">🎵</span>
         <span id="headerTrackTitle" class="header-track-title">Lost in the Fire</span>
       </button>
-      <button type="button" id="soundToggleBtn" class="icon-btn" title="Ääniefektit päälle / pois">🔊</button>
-      <button type="button" id="langToggleBtn" class="icon-btn" title="Vaihda kieli / Change language">🇫🇮 FI</button>
-      <button type="button" id="chatToggleBtn" class="icon-btn" title="Keskustelu">💬</button>
+
+      <!-- Sound Effects Toggle -->
+      <button type="button" id="soundToggleBtn" class="header-icon-btn" title="Ääniefektit">🔊</button>
+
+      <!-- Chat Drawer Toggle -->
+      <button type="button" id="chatToggleBtn" class="header-icon-btn chat-toggle-btn" title="Keskustelu">
+        💬
+        <span id="chatUnreadDot" class="unread-dot" style="display:none;"></span>
+      </button>
+
+      <!-- Leave Game Button -->
+      <button type="button" id="leaveGameBtn" class="header-pill btn-leave" style="display:none;" title="Poistu pelistä">
+        <span class="leave-icon">🚪</span>
+        <span class="leave-label">Poistu</span>
+      </button>
     </div>
   </header>
 
-  <!-- Background Music Audio Element -->
+  <!-- Background Music Audio Player -->
   <audio id="bgMusicPlayer" loop preload="auto">
     <source src="music.m4a" type="audio/mp4">
     <source src="music.mp3" type="audio/mpeg">
@@ -39,22 +59,32 @@
   <!-- Main Viewport -->
   <main id="app">
 
-    <!-- LOBBY SCREEN -->
+    <!-- LOBBY SCREEN (Features Porin Ässät wallpaper) -->
     <section id="lobbyScreen" class="screen active">
+      <div class="lobby-backdrop-overlay"></div>
+      
       <div class="lobby-container">
         <div class="lobby-card">
-          <h1 class="lobby-title" data-i18n="appTitle">Valepaskahousu</h1>
-          <p class="lobby-subtitle" data-i18n="tagline">Perinteinen suomalainen korttipeli</p>
 
-          <!-- Room Code & Join/Create forms (Shown when not in a room) -->
-          <div id="joinOrCreateSection">
+          <!-- Brand Header -->
+          <div class="lobby-brand">
+            <div class="brand-badge">✨ Korttihuone</div>
+            <h1 class="lobby-title">Tuutan ja Emailin pelihuane</h1>
+            <p class="lobby-subtitle">Valepaskahousu, Paskahousu & Arabia</p>
+          </div>
+
+          <!-- Join or Create Section -->
+          <div id="joinOrCreateSection" class="lobby-section">
             <div class="form-group">
-              <label class="form-label" data-i18n="yourName">Nimimerkkisi</label>
-              <input type="text" id="playerNameInput" class="form-input" placeholder="Matti" maxlength="15">
+              <label class="form-label" for="playerNameInput">Nimimerkkisi</label>
+              <div class="input-with-icon">
+                <span class="input-icon">👤</span>
+                <input type="text" id="playerNameInput" class="form-input" placeholder="Syötä nimesi" maxlength="15" autocomplete="off">
+              </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label" data-i18n="chooseAvatar">Valitse hahmo</label>
+              <label class="form-label">Valitse hahmo</label>
               <div class="avatar-grid">
                 <button type="button" class="avatar-btn selected" data-avatar="🦊">🦊</button>
                 <button type="button" class="avatar-btn" data-avatar="🐻">🐻</button>
@@ -67,73 +97,89 @@
               </div>
             </div>
 
-            <button type="button" id="createRoomBtn" class="btn-primary" data-i18n="createRoom">Luo uusi pelihuone</button>
+            <button type="button" id="createRoomBtn" class="btn-primary btn-large">
+              <span>🃏</span> Luo uusi pelihuone
+            </button>
 
-            <div style="text-align: center; margin: 14px 0; color: var(--text-muted); font-size: 13px;">— TAI —</div>
+            <div class="lobby-divider">
+              <span>TAI LIITY HUONEESEEN</span>
+            </div>
 
-            <div class="form-group">
-              <label class="form-label" data-i18n="roomCode">Huonekoodi</label>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" id="joinRoomCodeInput" class="form-input" placeholder="ABCD" maxlength="8" style="text-transform: uppercase;">
-                <button type="button" id="joinRoomBtn" class="btn-secondary" style="margin-top:0; width: auto; padding: 0 20px;" data-i18n="joinRoom">Liity</button>
-              </div>
+            <div class="join-room-row">
+              <input type="text" id="joinRoomCodeInput" class="form-input room-code-input" placeholder="KOODI" maxlength="8" autocomplete="off" spellcheck="false">
+              <button type="button" id="joinRoomBtn" class="btn-secondary btn-join">
+                Liity ➔
+              </button>
             </div>
           </div>
 
-          <!-- Inside Room Waiting View (Shown once connected to room) -->
-          <div id="roomWaitingSection" style="display: none;">
-            <div class="room-header-box">
-              <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;" data-i18n="roomCode">Huonekoodi</div>
-              <div id="roomCodeDisplay" class="room-code-display">----</div>
-              <button type="button" id="copyRoomLinkBtn" class="copy-link-btn" data-i18n="copyLink">Kopioi kutsulinkki</button>
+          <!-- Room Waiting Section (Inside Lobby) -->
+          <div id="roomWaitingSection" class="lobby-section" style="display: none;">
+            <div class="waiting-header-card">
+              <span class="waiting-sub">Huoneen kutsukoodi:</span>
+              <div class="code-copy-row">
+                <div id="roomCodeDisplay" class="room-code-badge">----</div>
+                <button type="button" id="copyRoomLinkBtn" class="btn-copy-code" title="Kopioi kutsulinkki">
+                  📋 Kopioi linkki
+                </button>
+              </div>
             </div>
 
-            <!-- Players in lobby -->
-            <div class="player-list-section">
-              <label class="form-label" data-i18n="waitingPlayers">Odotetaan pelaajia...</label>
-              <div id="lobbyPlayersGrid" class="player-cards-grid"></div>
+            <!-- Player List -->
+            <div class="waiting-players-box">
+              <div class="section-title-row">
+                <span class="form-label">Pelaajat huoneessa</span>
+                <span class="players-status-tag">Odotetaan...</span>
+              </div>
+              <div id="lobbyPlayersGrid" class="player-chips-grid"></div>
             </div>
 
-            <!-- House rules -->
-            <div class="rules-box">
-              <label class="form-label" data-i18n="rulesHeading" style="margin-bottom: 10px;">Huoneen säännöt</label>
+            <!-- Rules Config -->
+            <div class="rules-config-card">
+              <div class="form-label">Pelisäännöt</div>
               <div class="rules-grid">
-                <div>
-                  <label class="form-label" data-i18n="gameMode">Pelimuoto</label>
-                  <select id="ruleGameMode" class="rule-select">
-                    <option value="valepaskahousu" data-i18n="modeValepaska">Valepaskahousu (Valehtelu)</option>
-                    <option value="paskahousu" data-i18n="modeAvopaska">Paskahousu (Avopeli)</option>
-                    <option value="arabia" data-i18n="modeArabia">Arabia (Arabialainen)</option>
+                <div class="rule-field">
+                  <label for="ruleGameMode" class="rule-label">Pelimuoto</label>
+                  <select id="ruleGameMode" class="form-select">
+                    <option value="valepaskahousu">Valepaska (Valehtelu)</option>
+                    <option value="paskahousu">Paskahousu (Avopeli)</option>
+                    <option value="arabia">Arabia (Arabialainen)</option>
                   </select>
                 </div>
-                <div>
-                  <label class="form-label" data-i18n="courtRule">Seiskan sääntö (Kuvat)</label>
-                  <select id="ruleCourt" class="rule-select">
-                    <option value="7" data-i18n="court7">Vain 7+ päälle (Normaali)</option>
-                    <option value="9" data-i18n="court9">Vain 9+ päälle (Tiukka)</option>
-                    <option value="0" data-i18n="courtFree">Kaikkien päälle (Vapaa)</option>
+                <div class="rule-field">
+                  <label for="ruleCourt" class="rule-label">Kuvat (J, Q, K)</label>
+                  <select id="ruleCourt" class="form-select">
+                    <option value="7">Vain 7+ päälle</option>
+                    <option value="9">Vain 9+ päälle</option>
+                    <option value="0">Kaikkien päälle</option>
                   </select>
                 </div>
-                <div>
-                  <label class="form-label" data-i18n="twoRule">Kakkosen sääntö</label>
-                  <select id="ruleTwo" class="rule-select">
-                    <option value="only_two" data-i18n="twoOnlyTwo">Vain toinen 2 päälle</option>
-                    <option value="reset" data-i18n="twoReset">Kakkonen nollaa pinon</option>
+                <div class="rule-field">
+                  <label for="ruleTwo" class="rule-label">Kakkonen (2)</label>
+                  <select id="ruleTwo" class="form-select">
+                    <option value="only_two">Vain toisen 2 päälle</option>
+                    <option value="reset">Nollaa pinon</option>
                   </select>
                 </div>
-                <div>
-                  <label class="form-label" data-i18n="emptyTenAce">Kymppi/Ässä tyhjään</label>
-                  <select id="ruleEmptyTen" class="rule-select">
-                    <option value="next_pickup" data-i18n="emptyPickup">Seuraava nostaa</option>
-                    <option value="forbidden" data-i18n="emptyForbidden">Kielletty tyhjään</option>
+                <div class="rule-field">
+                  <label for="ruleEmptyTen" class="rule-label">10 / Ässä tyhjään</label>
+                  <select id="ruleEmptyTen" class="form-select">
+                    <option value="next_pickup">Seuraava nostaa</option>
+                    <option value="forbidden">Kielletty tyhjään</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            <!-- Actions -->
-            <button type="button" id="startGameBtn" class="btn-primary" data-i18n="startGame">Aloita peli</button>
-            <button type="button" id="addBotBtn" class="btn-secondary" data-i18n="addBot">+ Lisää botti</button>
+            <!-- Room Action Buttons -->
+            <div class="waiting-actions">
+              <button type="button" id="startGameBtn" class="btn-primary btn-large btn-start">
+                <span>🚀</span> Aloita peli
+              </button>
+              <button type="button" id="addBotBtn" class="btn-secondary btn-large">
+                <span>🤖</span> Lisää botti
+              </button>
+            </div>
           </div>
 
         </div>
@@ -142,66 +188,81 @@
 
     <!-- GAME TABLE SCREEN -->
     <section id="gameScreen" class="screen">
-      <div class="game-table-container">
+      <div class="felt-table-wrapper">
 
-        <!-- Opponents Area (Top / Sides) -->
-        <div id="opponentsArea" class="opponents-area"></div>
+        <!-- Opponents Area (Top of table) -->
+        <div id="opponentsArea" class="opponents-rail"></div>
 
-        <!-- Center Table: Deck & Discard Pile -->
-        <div class="table-center-area">
+        <!-- Center Felt: Deck, Discard Pile & Dead Pile -->
+        <div class="table-center-stage">
 
-          <!-- Draw deck -->
-          <div id="drawDeckArea" class="deck-stack" title="Nostopakka">
-            <div class="deck-card-layer" style="transform: translate(-3px, -3px);"></div>
-            <div class="deck-card-layer" style="transform: translate(-1px, -1px);"></div>
-            <div class="deck-card-layer"></div>
-            <div id="deckCountBadge" class="deck-counter-badge">37 pakka</div>
+          <!-- Draw Deck Stack -->
+          <div id="drawDeckArea" class="deck-station" title="Nostopakka (Klikkaa kääntääksesi kortin)">
+            <div class="deck-3d-stack">
+              <div class="deck-shadow"></div>
+              <div class="deck-card-layer layer-3"></div>
+              <div class="deck-card-layer layer-2"></div>
+              <div class="deck-card-layer layer-top">
+                <div class="deck-pattern">🃏</div>
+              </div>
+            </div>
+            <div id="deckCountBadge" class="deck-count-pill">37 pakka</div>
           </div>
 
           <!-- Play / Discard Pile -->
-          <div id="playPileArea" class="play-pile-area">
-            <div class="pile-empty-slot">
-              <span data-i18n="emptyPile">Pöytä on tyhjä</span>
+          <div id="playPileArea" class="play-pile-slot" title="Pelaa valitut kortit tähän">
+            <div class="pile-placeholder">
+              <span class="pile-empty-icon">🂠</span>
+              <span class="pile-empty-text">Pöytä on tyhjä</span>
             </div>
           </div>
 
-          <!-- Cleared cards counter (Dead pile) -->
-          <div class="dead-pile-indicator">
-            <span>🔥</span>
-            <span id="deadCountBadge">0 kaadettu</span>
+          <!-- Dead Pile (Kaadettu pino) Counter -->
+          <div class="dead-pile-station" title="Kaadetut kortit">
+            <span class="fire-icon">🔥</span>
+            <span id="deadCountBadge" class="dead-count-text">0 kaadettu</span>
           </div>
 
         </div>
 
-        <!-- CHALLENGE BANNER (Valepaska countdown) -->
-        <div id="challengeBanner" class="challenge-banner" style="display: none;">
-          <div class="challenge-title">
-            <span id="challengePlayerName">Pekka väittää lyöneensä:</span>
-          </div>
-          <div id="challengeClaimDisplay" class="challenge-claim">2x Kuningas (K)</div>
-          <div class="challenge-timer-bar">
-            <div id="challengeTimerFill" class="challenge-timer-fill"></div>
-          </div>
-          <div class="challenge-actions">
-            <button type="button" id="challengeBtn" class="btn-challenge" data-i18n="challenge">HAASTA! ⚡</button>
-            <button type="button" id="passBtn" class="btn-pass" data-i18n="pass">Uskon 👍</button>
-          </div>
-        </div>
-
-        <!-- REVEAL SCREEN OVERLAY (Challenge resolution) -->
-        <div id="revealOverlay" class="reveal-overlay" style="display: none;">
-          <div class="reveal-card-box">
-            <div id="revealVerdict" class="reveal-verdict lied">VALEHTELI! 🤥</div>
-            <div id="revealDetails" class="reveal-details">Pekka jäi kiinni valheesta ja nostaa pöydän!</div>
-            <div id="revealedCardsRow" class="revealed-cards-row"></div>
+        <!-- Valepaska Challenge Banner (Slides down during challenge window) -->
+        <div id="challengeBanner" class="challenge-banner" style="display:none;">
+          <div class="challenge-banner-content">
+            <div class="challenge-claim-box">
+              <span id="challengePlayerName" class="challenge-actor">Pekka väittää lyöneensä:</span>
+              <span id="challengeClaimDisplay" class="challenge-claim-value">2x Kuningas (K)</span>
+            </div>
+            <div class="challenge-timer-track">
+              <div id="challengeTimerFill" class="challenge-timer-progress"></div>
+            </div>
+            <div class="challenge-actions-row">
+              <button type="button" id="challengeBtn" class="btn-challenge-action btn-challenge-strike">
+                HAASTA! ⚡
+              </button>
+              <button type="button" id="passBtn" class="btn-challenge-action btn-challenge-believe">
+                Uskon 👍
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Floating Quick Emotes & Direct Table Chat Bar -->
+        <!-- Challenge Reveal Overlay -->
+        <div id="revealOverlay" class="reveal-overlay" style="display:none;">
+          <div class="reveal-modal-box">
+            <div id="revealVerdict" class="reveal-verdict-title lied">VALEHTELI! 🤥</div>
+            <div id="revealDetails" class="reveal-verdict-sub">Pekka jäi kiinni valheesta ja nostaa pöydän!</div>
+            <div id="revealedCardsRow" class="revealed-cards-flex"></div>
+          </div>
+        </div>
+
+        <!-- Floating Table Reactions FAB & Quick Chat Bar -->
         <div id="tableChatBar" class="table-chat-bar">
-          <button type="button" id="toggleTableChatBtn" class="table-chat-mobile-toggle" title="Pikareaktiot">💬</button>
-          <div class="table-chat-content">
-            <div class="floating-emotes">
+          <button type="button" id="toggleTableChatBtn" class="table-chat-fab" title="Pikareaktiot ja chatti">
+            <span class="fab-icon">💬</span>
+          </button>
+          
+          <div class="table-chat-popover">
+            <div class="quick-emotes-row">
               <button type="button" class="emote-btn" title="Paska">💩</button>
               <button type="button" class="emote-btn" title="Valehtelija">🤥</button>
               <button type="button" class="emote-btn" title="Haha">😂</button>
@@ -210,45 +271,52 @@
               <button type="button" class="emote-btn" title="Peukku">👍</button>
               <button type="button" class="emote-btn" title="Itku">😭</button>
             </div>
-            <form id="tableQuickChatForm" class="table-quick-chat-form">
-              <input type="text" id="tableQuickChatInput" class="table-quick-chat-input" placeholder="Viesti pöytään... (Enter)" maxlength="80" autocomplete="off">
-              <button type="submit" class="table-quick-chat-send" title="Lähetä">➤</button>
+            <form id="tableQuickChatForm" class="quick-chat-form">
+              <input type="text" id="tableQuickChatInput" class="quick-chat-input" placeholder="Viesti pöytään... (Enter)" maxlength="80" autocomplete="off">
+              <button type="submit" class="quick-chat-send-btn" title="Lähetä">➤</button>
             </form>
           </div>
         </div>
 
-        <!-- Player Bottom Controls & Hand Area -->
-        <div class="player-bottom-area">
+        <!-- Player Station (Bottom Area) -->
+        <div class="player-station">
           <div id="myBubbleAnchor" class="table-bubble-anchor my-bubble-anchor"></div>
-          <div id="currentTurnLabel" class="current-turn-label">Sinun vuorosi!</div>
 
-          <!-- In Arabia: Player's Table Cards (3 slots: face-down underneath, face-up on top) -->
-          <div id="playerTableCardsContainer" class="player-table-cards-container" style="display: none;">
-            <div class="table-cards-header">
-              <span class="table-cards-title" data-i18n="tableCardsTitle">Pöytäkortit</span>
-              <span id="swapHintTag" class="swap-hint-tag" style="display: none;" data-i18n="swapHint">💡 Voit vaihtaa kortteja kädestä pöytään!</span>
+          <!-- Turn Status Banner -->
+          <div class="turn-status-row">
+            <span id="currentTurnLabel" class="current-turn-badge">Sinun vuorosi!</span>
+          </div>
+
+          <!-- In Arabia: Player's 3 Table Card Slots -->
+          <div id="playerTableCardsContainer" class="player-table-cards-dock" style="display:none;">
+            <div class="table-cards-top-bar">
+              <span class="dock-title">Pöytäkortit</span>
+              <span id="swapHintTag" class="dock-hint" style="display:none;">💡 Vaihto sallittu 1. kaatoon asti</span>
             </div>
-            <div class="table-card-slots" id="tableCardSlots"></div>
+            <div class="table-slots-row" id="tableCardSlots"></div>
           </div>
 
-          <!-- Action Buttons Floating Dock -->
-          <div class="action-button-bar">
-            <button type="button" id="playCardsBtn" class="action-btn btn-play-action" disabled>
-              <span class="btn-icon">▶</span>
-              <span id="playCardsBtnText" data-i18n="playCards">Pelaa valitut kortit</span>
+          <!-- Player Action Buttons Dock -->
+          <div class="action-buttons-dock">
+            <button type="button" id="playCardsBtn" class="action-btn btn-play-cards" disabled>
+              <span class="action-btn-icon">▶</span>
+              <span id="playCardsBtnText" class="action-btn-text">Pelaa kortit</span>
             </button>
-            <button type="button" id="flipDeckBtn" class="action-btn btn-flip-action">
-              <span class="btn-icon">🂠</span>
-              <span data-i18n="flipDeck">Käännä pakasta</span>
+            <button type="button" id="flipDeckBtn" class="action-btn btn-flip-deck">
+              <span class="action-btn-icon">🂠</span>
+              <span class="action-btn-text">Käännä pakasta</span>
             </button>
-            <button type="button" id="pickupPileBtn" class="action-btn btn-pickup-action">
-              <span class="btn-icon">📥</span>
-              <span data-i18n="pickupPile">Nosta pöytä</span>
+            <button type="button" id="pickupPileBtn" class="action-btn btn-pickup-pile">
+              <span class="action-btn-icon">📥</span>
+              <span class="action-btn-text">Nosta pöytä</span>
             </button>
           </div>
 
-          <!-- Fanned Hand Cards -->
-          <div id="handCardsContainer" class="hand-cards-container"></div>
+          <!-- Player Hand Cards -->
+          <div class="hand-scroll-wrapper">
+            <div id="handCardsContainer" class="hand-cards-dock"></div>
+          </div>
+
         </div>
 
       </div>
@@ -256,35 +324,43 @@
 
     <!-- GAME OVER SCREEN OVERLAY -->
     <section id="gameOverScreen" class="screen modal-overlay">
-      <div class="game-over-box">
-        <h1 style="font-size: 28px; font-weight: 900; color: var(--gold); margin-bottom: 6px;" data-i18n="gameOver">Peli Päättynyt!</h1>
+      <div class="game-over-modal">
+        <div class="game-over-trophy">🏆</div>
+        <h1 class="game-over-title">Peli Päättynyt!</h1>
 
-        <!-- The Paskahousu (Loser) -->
-        <div class="paskahousu-crown-box">
-          <div class="paskahousu-emoji">💩👖</div>
-          <div style="font-size: 13px; font-weight: 700; color: #ff6b6b; text-transform: uppercase;" data-i18n="paskahousuTitle">Pelin häviäjä ja PASKAHOUSU:</div>
-          <div id="paskahousuLoserName" class="paskahousu-name">Matti</div>
+        <!-- The Loser / Paskahousu Box -->
+        <div class="paskahousu-loser-box">
+          <div class="loser-emojis">💩👖</div>
+          <div class="loser-label">Pelin häviäjä ja virallinen PASKAHOUSU:</div>
+          <div id="paskahousuLoserName" class="loser-name">Matti</div>
         </div>
 
-        <!-- Podium of Winners -->
-        <div id="gameWinnersList" class="winners-list"></div>
+        <!-- Winners Podium List -->
+        <div class="winners-podium-section">
+          <div class="winners-heading">Tulokset</div>
+          <div id="gameWinnersList" class="winners-list"></div>
+        </div>
 
-        <button type="button" id="playAgainBtn" class="btn-primary" data-i18n="playAgain">Pelaa uudelleen</button>
+        <button type="button" id="playAgainBtn" class="btn-primary btn-large btn-play-again">
+          <span>🔄</span> Pelaa uudelleen
+        </button>
       </div>
     </section>
 
     <!-- VALEPASKA BLUFF DECLARATION MODAL -->
     <div id="bluffModal" class="modal-overlay">
-      <div class="modal-content">
-        <h2 class="modal-title" data-i18n="bluffModalTitle">Mitä väität pelaavasi?</h2>
-        <p class="modal-subtitle" data-i18n="bluffModalSubtitle">Voit kertoa totuuden tai valehdella pokalla naamalla!</p>
-
-        <div style="text-align: center; font-size: 18px; font-weight: 800; color: var(--gold); margin-bottom: 14px;">
-          <span id="bluffModalQty">1x</span>
+      <div class="bluff-modal-card">
+        <div class="bluff-header">
+          <span class="bluff-icon">🤥</span>
+          <h2 class="modal-title">Mitä väität pelaavasi?</h2>
+          <p class="modal-subtitle">Puhu totta tai bluffaa pokalla naamalla!</p>
         </div>
 
-        <!-- Ranks 3 to 2 -->
-        <div class="rank-selector-grid">
+        <div class="bluff-qty-badge">
+          Pelaat: <span id="bluffModalQty">1x</span>
+        </div>
+
+        <div class="bluff-ranks-grid">
           <button type="button" class="rank-choice-btn selected" data-rank="3">3</button>
           <button type="button" class="rank-choice-btn" data-rank="4">4</button>
           <button type="button" class="rank-choice-btn" data-rank="5">5</button>
@@ -297,96 +373,110 @@
           <button type="button" class="rank-choice-btn" data-rank="Q">Q 👑</button>
           <button type="button" class="rank-choice-btn" data-rank="K">K 🤴</button>
           <button type="button" class="rank-choice-btn" data-rank="A">A ⭐</button>
-          <button type="button" class="rank-choice-btn" data-rank="2" style="grid-column: span 4; border-color: rgba(245, 197, 24, 0.4);">2 (Valtti) ⚡</button>
+          <button type="button" class="rank-choice-btn rank-choice-two" data-rank="2">2 (Valtti) ⚡</button>
         </div>
 
-        <button type="button" id="confirmBluffPlayBtn" class="btn-primary" data-i18n="confirmPlay">Lyö pöytään</button>
-        <button type="button" id="cancelBluffPlayBtn" class="btn-secondary" data-i18n="cancel">Peruuta</button>
+        <div class="bluff-modal-actions">
+          <button type="button" id="confirmBluffPlayBtn" class="btn-primary btn-large">
+            Lyö pöytään 💥
+          </button>
+          <button type="button" id="cancelBluffPlayBtn" class="btn-secondary">
+            Peruuta
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- LEAVE GAME MODAL -->
     <div id="leaveModal" class="modal-overlay">
-      <div class="modal-content" style="max-width: 380px; text-align: center;">
-        <div style="font-size: 40px; margin-bottom: 8px;">🚪</div>
-        <h2 class="modal-title" data-i18n="leaveTitle">Haluatko poistua pelistä?</h2>
-        <p class="modal-subtitle" data-i18n="leaveSubtitle">Poistut pöydästä takaisin päävalikkoon.</p>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button type="button" id="confirmLeaveBtn" class="btn-primary" style="background: linear-gradient(135deg, #e63946 0%, #b81424 100%); color: #fff;" data-i18n="confirmLeave">Kyllä, poistu</button>
-          <button type="button" id="cancelLeaveBtn" class="btn-secondary" style="margin-top: 0;" data-i18n="cancel">Peruuta</button>
+      <div class="leave-modal-card">
+        <div class="leave-card-icon">🚪</div>
+        <h2 class="modal-title">Haluatko poistua pelistä?</h2>
+        <p class="modal-subtitle">Poistut pöydästä takaisin päävalikkoon.</p>
+        <div class="leave-card-actions">
+          <button type="button" id="confirmLeaveBtn" class="btn-danger">
+            Kyllä, poistu
+          </button>
+          <button type="button" id="cancelLeaveBtn" class="btn-secondary">
+            Peruuta
+          </button>
         </div>
       </div>
     </div>
 
     <!-- MUSIC PLAYER MENU MODAL -->
     <div id="musicMenuModal" class="modal-overlay">
-      <div class="modal-content music-modal-content">
+      <div class="music-modal-card">
         <div class="music-modal-header">
-          <div class="music-modal-title-group">
-            <span class="music-modal-title-icon">🎵</span>
+          <div class="music-modal-brand">
+            <span class="music-brand-icon">🎵</span>
             <div>
-              <h2 class="music-modal-title">Taustamusiikki</h2>
-              <div id="modalTrackArtist" class="music-modal-artist">Gesaffelstein & The Weeknd</div>
+              <h2 class="music-title">Taustamusiikki</h2>
+              <div id="modalTrackArtist" class="music-artist">The Weeknd</div>
             </div>
           </div>
-          <button type="button" id="closeMusicMenuBtn" class="modal-close-icon-btn">✕</button>
+          <button type="button" id="closeMusicMenuBtn" class="modal-close-btn" title="Sulje">✕</button>
         </div>
 
-        <!-- Now Playing Bar -->
-        <div class="music-player-panel">
-          <div class="music-equalizer-bar" id="musicEqualizer">
-            <span class="eq-col col-1"></span>
-            <span class="eq-col col-2"></span>
-            <span class="eq-col col-3"></span>
-            <span class="eq-col col-4"></span>
+        <!-- Now Playing Deck -->
+        <div class="music-deck-card">
+          <div class="music-track-info-row">
+            <div class="music-equalizer-bars" id="musicEqualizer">
+              <span class="eq-col col-1"></span>
+              <span class="eq-col col-2"></span>
+              <span class="eq-col col-3"></span>
+              <span class="eq-col col-4"></span>
+            </div>
+            <div class="track-details">
+              <span class="track-label">Nyt toistetaan:</span>
+              <span id="modalTrackTitle" class="track-now-title">Lost in the Fire</span>
+            </div>
           </div>
 
-          <div class="music-track-display">
-            <span id="modalTrackTitle" class="now-playing-title">Lost in the Fire</span>
+          <div class="music-player-controls">
+            <button type="button" id="musicPrevBtn" class="btn-music-ctrl" title="Edellinen kappale">⏮</button>
+            <button type="button" id="musicPlayPauseBtn" class="btn-music-ctrl btn-play-main" title="Toista / Pysäytä">⏸</button>
+            <button type="button" id="musicNextBtn" class="btn-music-ctrl" title="Seuraava kappale">⏭</button>
           </div>
 
-          <div class="music-controls">
-            <button type="button" id="musicPrevBtn" class="music-btn-ctrl" title="Edellinen kappale">⏮</button>
-            <button type="button" id="musicPlayPauseBtn" class="music-btn-ctrl play-pause-main" title="Toista / Keskeytä">⏸</button>
-            <button type="button" id="musicNextBtn" class="music-btn-ctrl" title="Seuraava kappale">⏭</button>
-          </div>
-
-          <div class="music-volume-box">
-            <span class="vol-icon">🔈</span>
-            <input type="range" id="musicModalVolumeSlider" min="0" max="1" step="0.05" value="0.35" class="music-modal-slider" title="Äänenvoimakkuus">
-            <span class="vol-icon">🔊</span>
+          <div class="music-volume-row">
+            <span class="vol-label">🔈</span>
+            <input type="range" id="musicModalVolumeSlider" min="0" max="1" step="0.05" value="0.35" class="music-slider" title="Äänenvoimakkuus">
+            <span class="vol-label">🔊</span>
           </div>
         </div>
 
         <!-- Playlist -->
-        <div class="playlist-section">
-          <div class="playlist-heading">Valitse kappale:</div>
-          <div id="musicPlaylistContainer" class="music-playlist-container"></div>
+        <div class="music-playlist-box">
+          <div class="playlist-header-label">Valitse kappale:</div>
+          <div id="musicPlaylistContainer" class="playlist-items-scroll"></div>
         </div>
       </div>
     </div>
 
     <!-- IN-GAME CHAT DRAWER -->
     <aside id="chatDrawer" class="chat-drawer">
-      <div class="chat-header">
-        <span style="font-weight: 800; font-size: 14px;">💬 Keskustelu</span>
-        <button type="button" id="closeChatBtn" class="icon-btn" style="padding: 4px 8px;">✖</button>
+      <div class="chat-drawer-header">
+        <div class="chat-drawer-title">
+          <span>💬</span>
+          <span>Keskustelu</span>
+        </div>
+        <button type="button" id="closeChatBtn" class="chat-close-btn" title="Sulje">✕</button>
       </div>
 
-      <div id="chatMessagesBox" class="chat-messages"></div>
+      <div id="chatMessagesBox" class="chat-messages-container"></div>
 
       <form id="chatForm" class="chat-input-bar">
-        <input type="text" id="chatInput" class="chat-input" placeholder="Kirjoita viesti..." data-i18n-ph="chatPlaceholder" maxlength="150" autocomplete="off">
-        <button type="submit" class="btn-primary" style="width: auto; padding: 6px 14px; font-size: 13px;" data-i18n="send">Lähetä</button>
+        <input type="text" id="chatInput" class="chat-text-input" placeholder="Kirjoita viesti..." maxlength="150" autocomplete="off">
+        <button type="submit" class="btn-primary btn-chat-send">Lähetä</button>
       </form>
     </aside>
 
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=4"></script>
-  <script src="audio.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <script src="cards.js?v=5"></script>
+  <script src="audio.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
-
