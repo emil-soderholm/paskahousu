@@ -1,137 +1,72 @@
 /**
  * Multiplayer Paskahousu & Valepaskahousu Web Application.
- * Full client-side game logic, WebSocket management, sound effects, animations, and i18n.
+ * Finnish-only, Mobile-First client architecture.
  */
 
-// Multi-language strings (Finnish & English)
-const I18N = {
-  fi: {
-    appTitle: "Tuutan ja Emailin pelihuane",
-    tagline: "Perinteinen suomalainen korttipeli",
-    createRoom: "Luo uusi pelihuone",
-    joinRoom: "Liity koodilla",
-    roomCode: "Huonekoodi",
-    yourName: "Nimimerkkisi",
-    chooseAvatar: "Valitse hahmo",
-    enterGame: "Siirry huoneeseen",
-    waitingPlayers: "Odotetaan pelaajia...",
-    startGame: "Aloita peli",
-    addBot: "+ Lisää botti",
-    copyLink: "Kopioi kutsulinkki",
-    linkCopied: "Linkki kopioitu leikepöydälle!",
-    rulesHeading: "Huoneen säännöt",
-    gameMode: "Pelimuoto",
-    modeValepaska: "Valepaskahousu (Valehtelu sallittu)",
-    modeAvopaska: "Paskahousu (Avopeli)",
-    modeArabia: "Arabia (Arabialainen)",
-    tableCardsTitle: "Pöytäkortit",
-    swapHint: "💡 Vaihto sallittu 1. kaatoon asti",
-    courtRule: "Seiskan sääntö (Kuvakortit)",
-    court7: "Vain 7 tai suuremman päälle (Normaali)",
-    court9: "Vain 9 tai suuremman päälle (Tiukka)",
-    courtFree: "Saa lyödä minkä vain päälle (Vapaa)",
-    twoRule: "Kakkosen sääntö",
-    twoOnlyTwo: "Vain toinen 2 päälle (Perinteinen)",
-    twoReset: "Kakkonen nollaa pinon (Vapaa)",
-    emptyTenAce: "Kymppi/Ässä tyhjään pöytään",
-    emptyPickup: "Seuraava joutuu nostamaan",
-    emptyForbidden: "Kielletty tyhjään pöytään",
-    challengeTime: "Haastoaika",
-    playCards: "Pelaa valitut kortit",
-    flipDeck: "Käännä pakasta",
-    pickupPile: "Nosta pöytä",
-    pass: "Uskon 👍",
-    challenge: "HAASTA! ⚡",
-    claimedCards: "väittää lyöneensä:",
-    deckCount: "Pakka",
-    clearedCount: "Kaadettu",
-    bluffModalTitle: "Mitä väität pelaavasi?",
-    bluffModalSubtitle: "Voit kertoa totuuden tai valehdella pokalla naamalla!",
-    confirmPlay: "Lyö pöytään",
-    cancel: "Peruuta",
-    liarCaught: "VALEHTELI! 🤥",
-    honestPlayer: "PUHUI TOTTA! 😇",
-    gameOver: "Peli Päättynyt!",
-    paskahousuTitle: "Pelin häviäjä ja PASKAHOUSU:",
-    playAgain: "Pelaa uudelleen",
-    chatPlaceholder: "Kirjoita viesti...",
-    send: "Lähetä",
-    turnYou: "Sinun vuorosi!",
-    turnOther: "Vuorossa: ",
-    noCardsSelected: "Valitse kortit ensin!",
-    emptyPile: "Pöytä on tyhjä",
-    cardsSelected: "korttia valittu",
-    leaveGame: "Poistu",
-    leaveTitle: "Haluatko poistua pelistä?",
-    leaveSubtitle: "Poistutaan takaisin päävalikkoon.",
-    confirmLeave: "Kyllä, poistu"
-  },
-  en: {
-    appTitle: "Tuutan ja Emailin pelihuane",
-    tagline: "Classic Finnish Bluffing Card Game",
-    createRoom: "Create Game Room",
-    joinRoom: "Join With Code",
-    roomCode: "Room Code",
-    yourName: "Your Nickname",
-    chooseAvatar: "Choose Avatar",
-    enterGame: "Enter Room",
-    waitingPlayers: "Waiting for players...",
-    startGame: "Start Game",
-    addBot: "+ Add Bot",
-    copyLink: "Copy Invite Link",
-    linkCopied: "Link copied to clipboard!",
-    rulesHeading: "Room Rules",
-    gameMode: "Game Mode",
-    modeValepaska: "Valepaskahousu (Bluffing / Face-down)",
-    modeAvopaska: "Paskahousu (Open / Face-up)",
-    modeArabia: "Arabia (Palace / Shithead)",
-    tableCardsTitle: "Table Cards",
-    swapHint: "💡 Swap allowed until 1st clear",
-    courtRule: "Court Card Rule (J, Q, K)",
-    court7: "Only on 7+ (Standard)",
-    court9: "Only on 9+ (Strict)",
-    courtFree: "On any card (Free)",
-    twoRule: "Rule of 2s",
-    twoOnlyTwo: "Only 2 on 2 (Standard)",
-    twoReset: "2 resets the pile (Free)",
-    emptyTenAce: "10/Ace to Empty Table",
-    emptyPickup: "Next player picks up",
-    emptyForbidden: "Forbidden on empty table",
-    challengeTime: "Challenge Timer",
-    playCards: "Pelaa valitut kortit",
-    flipDeck: "Flip From Deck",
-    pickupPile: "Pick Up Pile",
-    pass: "Believe 👍",
-    challenge: "CHALLENGE! ⚡",
-    claimedCards: "claims playing:",
-    deckCount: "Deck",
-    clearedCount: "Cleared",
-    bluffModalTitle: "What do you claim to play?",
-    bluffModalSubtitle: "Tell the truth or pull off a ruthless bluff!",
-    confirmPlay: "Play To Table",
-    cancel: "Cancel",
-    liarCaught: "LIAR CAUGHT! 🤥",
-    honestPlayer: "WAS HONEST! 😇",
-    gameOver: "Game Over!",
-    paskahousuTitle: "The official PASKAHOUSU (Loser):",
-    playAgain: "Play Again",
-    chatPlaceholder: "Type message...",
-    send: "Send",
-    turnYou: "Your turn!",
-    turnOther: "Turn: ",
-    noCardsSelected: "Select cards first!",
-    emptyPile: "Pile is empty",
-    cardsSelected: "card(s) selected",
-    leaveGame: "Leave",
-    leaveTitle: "Leave game?",
-    leaveSubtitle: "Return to the main menu.",
-    confirmLeave: "Yes, leave"
-  }
+// Finnish strings dictionary
+const FI_STRINGS = {
+  appTitle: "Tuutan ja Emailin pelihuane",
+  tagline: "Perinteinen suomalainen korttipeli",
+  createRoom: "Luo uusi pelihuone",
+  joinRoom: "Liity koodilla",
+  roomCode: "Huonekoodi",
+  yourName: "Nimimerkkisi",
+  chooseAvatar: "Valitse hahmo",
+  enterGame: "Siirry huoneeseen",
+  waitingPlayers: "Odotetaan pelaajia...",
+  startGame: "Aloita peli",
+  addBot: "+ Lisää botti",
+  copyLink: "Kopioi linkki",
+  linkCopied: "Linkki kopioitu!",
+  rulesHeading: "Pelisäännöt",
+  gameMode: "Pelimuoto",
+  modeValepaska: "Valepaskahousu (Valehtelu)",
+  modeAvopaska: "Paskahousu (Avopeli)",
+  modeArabia: "Arabia (Arabialainen)",
+  tableCardsTitle: "Pöytäkortit",
+  swapHint: "💡 Vaihto sallittu 1. kaatoon asti",
+  courtRule: "Seiskan sääntö (Kuvakortit)",
+  court7: "Vain 7+ päälle",
+  court9: "Vain 9+ päälle",
+  courtFree: "Kaikkien päälle",
+  twoRule: "Kakkosen sääntö",
+  twoOnlyTwo: "Vain toinen 2 päälle",
+  twoReset: "Kakkonen nollaa pinon",
+  emptyTenAce: "10 / Ässä tyhjään pöytään",
+  emptyPickup: "Seuraava nostaa",
+  emptyForbidden: "Kielletty tyhjään",
+  playCards: "Pelaa kortit",
+  flipDeck: "Käännä pakasta",
+  pickupPile: "Nosta pöytä",
+  pass: "Uskon 👍",
+  challenge: "HAASTA! ⚡",
+  claimedCards: "väittää lyöneensä:",
+  deckCount: "pakka",
+  clearedCount: "kaadettu",
+  bluffModalTitle: "Mitä väität pelaavasi?",
+  bluffModalSubtitle: "Puhu totta tai bluffaa pokalla naamalla!",
+  confirmPlay: "Lyö pöytään",
+  cancel: "Peruuta",
+  liarCaught: "VALEHTELI! 🤥",
+  honestPlayer: "PUHUI TOTTA! 😇",
+  gameOver: "Peli Päättynyt!",
+  paskahousuTitle: "Pelin häviäjä ja virallinen PASKAHOUSU:",
+  playAgain: "Pelaa uudelleen",
+  chatPlaceholder: "Kirjoita viesti...",
+  send: "Lähetä",
+  turnYou: "Sinun vuorosi!",
+  turnOther: "Vuorossa: ",
+  noCardsSelected: "Valitse kortit ensin!",
+  emptyPile: "Pöytä on tyhjä",
+  cardsSelected: "korttia valittu",
+  leaveGame: "Poistu",
+  leaveTitle: "Haluatko poistua pelistä?",
+  leaveSubtitle: "Poistut takaisin päävalikkoon.",
+  confirmLeave: "Kyllä, poistu"
 };
 
 class GameApp {
   constructor() {
-    this.lang = localStorage.getItem('valepaska_lang') || 'fi';
     this.playerId = localStorage.getItem('valepaska_pid') || '';
     this.playerName = localStorage.getItem('valepaska_pname') || 'Pelaaja';
     this.playerAvatar = localStorage.getItem('valepaska_pavatar') || '🦊';
@@ -150,41 +85,10 @@ class GameApp {
     this.initDOM();
     this.initMusic();
     this.initURLParams();
-    this.applyLanguage();
   }
 
   t(key) {
-    return (I18N[this.lang] && I18N[this.lang][key]) || (I18N['fi'][key] || key);
-  }
-
-  setLanguage(lang) {
-    this.lang = lang;
-    localStorage.setItem('valepaska_lang', lang);
-    this.applyLanguage();
-    if (this.state) {
-      this.render();
-    }
-  }
-
-  applyLanguage() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (key && this.t(key)) {
-        el.textContent = this.t(key);
-      }
-    });
-
-    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-      const key = el.getAttribute('data-i18n-ph');
-      if (key && this.t(key)) {
-        el.setAttribute('placeholder', this.t(key));
-      }
-    });
-
-    const langBtn = document.getElementById('langToggleBtn');
-    if (langBtn) {
-      langBtn.textContent = this.lang === 'fi' ? '🇫🇮 FI' : '🇬🇧 EN';
-    }
+    return FI_STRINGS[key] || key;
   }
 
   initURLParams() {
@@ -221,18 +125,34 @@ class GameApp {
     });
 
     // Create room button
-    document.getElementById('createRoomBtn').addEventListener('click', () => this.handleCreateRoom());
+    const createBtn = document.getElementById('createRoomBtn');
+    if (createBtn) {
+      createBtn.addEventListener('click', () => this.handleCreateRoom());
+    }
 
     // Join room button
-    document.getElementById('joinRoomBtn').addEventListener('click', () => {
-      const input = document.getElementById('joinRoomCodeInput');
-      const code = input ? input.value.trim().toUpperCase() : '';
-      if (code) {
-        this.connectToRoom(code);
-      }
-    });
+    const joinBtn = document.getElementById('joinRoomBtn');
+    if (joinBtn) {
+      joinBtn.addEventListener('click', () => {
+        const input = document.getElementById('joinRoomCodeInput');
+        const code = input ? input.value.trim().toUpperCase() : '';
+        if (code) {
+          this.connectToRoom(code);
+        }
+      });
+    }
 
-    // Header logo click: alternate way to leave game / return to main menu
+    const joinCodeInput = document.getElementById('joinRoomCodeInput');
+    if (joinCodeInput) {
+      joinCodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const code = joinCodeInput.value.trim().toUpperCase();
+          if (code) this.connectToRoom(code);
+        }
+      });
+    }
+
+    // Header logo click: prompt to leave game / return to main menu
     const logoGroup = document.getElementById('headerLogoGroup') || document.querySelector('.logo-group');
     if (logoGroup) {
       logoGroup.addEventListener('click', () => {
@@ -249,10 +169,28 @@ class GameApp {
       });
     }
 
-    // Language toggle
-    document.getElementById('langToggleBtn').addEventListener('click', () => {
-      this.setLanguage(this.lang === 'fi' ? 'en' : 'fi');
-    });
+    // Header Room Code Pill click to copy
+    const headerRoomCode = document.getElementById('headerRoomCode');
+    if (headerRoomCode) {
+      headerRoomCode.addEventListener('click', () => {
+        if (!this.roomId) return;
+        let urlText = window.location.href;
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('room', this.roomId);
+          urlText = url.toString();
+        } catch (e) {}
+
+        navigator.clipboard.writeText(urlText).then(() => {
+          const textEl = headerRoomCode.querySelector('.room-pill-text');
+          const orig = textEl ? textEl.textContent : headerRoomCode.textContent;
+          if (textEl) textEl.textContent = 'Kopioitu! ✓';
+          setTimeout(() => {
+            if (textEl) textEl.textContent = orig;
+          }, 2000);
+        });
+      });
+    }
 
     // Leave game modal & button
     const leaveBtn = document.getElementById('leaveGameBtn');
@@ -292,13 +230,20 @@ class GameApp {
     // Chat drawer toggle
     const chatToggle = document.getElementById('chatToggleBtn');
     const chatDrawer = document.getElementById('chatDrawer');
+    const unreadDot = document.getElementById('chatUnreadDot');
     if (chatToggle && chatDrawer) {
       chatToggle.addEventListener('click', () => {
         chatDrawer.classList.toggle('open');
+        if (chatDrawer.classList.contains('open') && unreadDot) {
+          unreadDot.style.display = 'none';
+        }
       });
-      document.getElementById('closeChatBtn').addEventListener('click', () => {
-        chatDrawer.classList.remove('open');
-      });
+      const closeChat = document.getElementById('closeChatBtn');
+      if (closeChat) {
+        closeChat.addEventListener('click', () => {
+          chatDrawer.classList.remove('open');
+        });
+      }
     }
 
     // Chat form
@@ -315,17 +260,30 @@ class GameApp {
       });
     }
 
-    // Table quick chat form & direct emotes
+    // Table quick chat FAB & form
     const tableQuickChatForm = document.getElementById('tableQuickChatForm');
     const tableQuickChatInput = document.getElementById('tableQuickChatInput');
     const tableChatBar = document.getElementById('tableChatBar');
     const toggleTableChatBtn = document.getElementById('toggleTableChatBtn');
 
     if (toggleTableChatBtn && tableChatBar) {
-      toggleTableChatBtn.addEventListener('click', () => {
+      toggleTableChatBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         tableChatBar.classList.toggle('mobile-open');
+        if (tableChatBar.classList.contains('mobile-open') && tableQuickChatInput) {
+          setTimeout(() => tableQuickChatInput.focus(), 150);
+        }
       });
     }
+
+    // Close table chat popover on outside click
+    document.addEventListener('click', (e) => {
+      if (tableChatBar && tableChatBar.classList.contains('mobile-open')) {
+        if (!tableChatBar.contains(e.target)) {
+          tableChatBar.classList.remove('mobile-open');
+        }
+      }
+    });
 
     if (tableQuickChatForm && tableQuickChatInput) {
       tableQuickChatForm.addEventListener('submit', (e) => {
@@ -352,7 +310,6 @@ class GameApp {
     // Center play pile click & drag/drop to play
     const playPileArea = document.getElementById('playPileArea');
     if (playPileArea) {
-      // 1. Click on pile to play selected cards
       playPileArea.addEventListener('click', () => {
         const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
         if (!isMyTurn) return;
@@ -365,7 +322,6 @@ class GameApp {
         }
       });
 
-      // 2. Drag over & drop on pile to play
       playPileArea.addEventListener('dragover', (e) => {
         const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
         if (!isMyTurn) return;
@@ -381,7 +337,6 @@ class GameApp {
       playPileArea.addEventListener('drop', (e) => {
         e.preventDefault();
         playPileArea.classList.remove('drag-over');
-        playPileArea.classList.remove('can-play-here');
 
         const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
         if (!isMyTurn) return;
@@ -420,7 +375,19 @@ class GameApp {
       });
     }
 
-    // Copy room link
+    // Draw deck click to flip
+    const drawDeckArea = document.getElementById('drawDeckArea');
+    if (drawDeckArea) {
+      drawDeckArea.addEventListener('click', () => {
+        const isMyTurn = (this.state && this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+        if (isMyTurn && this.state.draw_deck_count > 0 && this.selectedTableUpIndices.size === 0) {
+          window.sounds.playPop();
+          this.sendWS({ type: 'flip_deck' });
+        }
+      });
+    }
+
+    // Copy room link button in waiting room
     const copyBtn = document.getElementById('copyRoomLinkBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
@@ -432,22 +399,28 @@ class GameApp {
         } catch (e) {}
 
         navigator.clipboard.writeText(urlText).then(() => {
-          copyBtn.textContent = this.t('linkCopied');
+          copyBtn.textContent = 'Linkki kopioitu! ✓';
           setTimeout(() => {
-            copyBtn.textContent = this.t('copyLink');
+            copyBtn.textContent = '📋 Kopioi linkki';
           }, 2000);
         });
       });
     }
 
     // Lobby actions
-    document.getElementById('startGameBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'start_game' });
-    });
+    const startBtn = document.getElementById('startGameBtn');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'start_game' });
+      });
+    }
 
-    document.getElementById('addBotBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'add_bot' });
-    });
+    const addBotBtn = document.getElementById('addBotBtn');
+    if (addBotBtn) {
+      addBotBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'add_bot' });
+      });
+    }
 
     // House rules controls
     const bindRuleSelect = (elemId, key) => {
@@ -468,21 +441,39 @@ class GameApp {
     bindRuleSelect('ruleEmptyTen', 'empty_ten_ace');
 
     // In-game bottom action buttons
-    document.getElementById('playCardsBtn').addEventListener('click', () => this.handlePlayClick());
-    document.getElementById('flipDeckBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'flip_deck' });
-    });
-    document.getElementById('pickupPileBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'pickup_pile' });
-    });
+    const playCardsBtn = document.getElementById('playCardsBtn');
+    if (playCardsBtn) {
+      playCardsBtn.addEventListener('click', () => this.handlePlayClick());
+    }
+
+    const flipDeckBtn = document.getElementById('flipDeckBtn');
+    if (flipDeckBtn) {
+      flipDeckBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'flip_deck' });
+      });
+    }
+
+    const pickupPileBtn = document.getElementById('pickupPileBtn');
+    if (pickupPileBtn) {
+      pickupPileBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'pickup_pile' });
+      });
+    }
 
     // Challenge actions
-    document.getElementById('challengeBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'challenge' });
-    });
-    document.getElementById('passBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'pass_challenge' });
-    });
+    const challengeBtn = document.getElementById('challengeBtn');
+    if (challengeBtn) {
+      challengeBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'challenge' });
+      });
+    }
+
+    const passBtn = document.getElementById('passBtn');
+    if (passBtn) {
+      passBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'pass_challenge' });
+      });
+    }
 
     // Bluff modal rank selection buttons
     document.querySelectorAll('.rank-choice-btn').forEach(btn => {
@@ -493,21 +484,33 @@ class GameApp {
       });
     });
 
-    document.getElementById('confirmBluffPlayBtn').addEventListener('click', () => {
-      this.executePlayCards(this.bluffDeclaredRank);
-      document.getElementById('bluffModal').classList.remove('active');
-    });
+    const confirmBluffBtn = document.getElementById('confirmBluffPlayBtn');
+    if (confirmBluffBtn) {
+      confirmBluffBtn.addEventListener('click', () => {
+        this.executePlayCards(this.bluffDeclaredRank);
+        document.getElementById('bluffModal').classList.remove('active');
+      });
+    }
 
-    document.getElementById('cancelBluffPlayBtn').addEventListener('click', () => {
-      document.getElementById('bluffModal').classList.remove('active');
-    });
+    const cancelBluffBtn = document.getElementById('cancelBluffPlayBtn');
+    if (cancelBluffBtn) {
+      cancelBluffBtn.addEventListener('click', () => {
+        document.getElementById('bluffModal').classList.remove('active');
+      });
+    }
 
     // Game over replay
-    document.getElementById('playAgainBtn').addEventListener('click', () => {
-      this.sendWS({ type: 'restart_game' });
-    });
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    if (playAgainBtn) {
+      playAgainBtn.addEventListener('click', () => {
+        this.sendWS({ type: 'restart_game' });
+      });
+    }
   }
 
+  /* ==========================================================================
+     BACKGROUND MUSIC PLAYER & PLAYLIST
+     ========================================================================== */
   initMusic() {
     this.musicPlayer = document.getElementById('bgMusicPlayer');
     if (!this.musicPlayer) return;
@@ -571,135 +574,122 @@ class GameApp {
       }
     ];
 
-    // Find saved track or default to 0 ('lost_in_the_fire')
     const savedTrackId = localStorage.getItem('valepaska_selected_track');
     let initialIndex = this.playlist.findIndex(t => t.id === savedTrackId);
     if (initialIndex === -1) initialIndex = 0;
     this.currentTrackIndex = initialIndex;
 
-    // Load saved volume (default 0.35)
-    const savedVol = localStorage.getItem('valepaska_music_vol');
-    if (savedVol !== null) {
-      this.musicPlayer.volume = Math.max(0.05, parseFloat(savedVol));
-    } else {
-      this.musicPlayer.volume = 0.35;
-    }
+    const savedVolume = localStorage.getItem('valepaska_music_volume');
+    this.musicVolume = savedVolume !== null ? parseFloat(savedVolume) : 0.35;
+    this.musicPlayer.volume = this.musicVolume;
 
-    const modalVolumeSlider = document.getElementById('musicModalVolumeSlider');
-    if (modalVolumeSlider) {
-      modalVolumeSlider.value = this.musicPlayer.volume.toString();
-      modalVolumeSlider.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        this.musicPlayer.volume = val;
-        localStorage.setItem('valepaska_music_vol', val.toString());
-      });
-    }
+    const savedMuted = localStorage.getItem('valepaska_music_muted') === 'true';
+    this.musicPlayer.muted = savedMuted;
 
-    // Modal elements
-    const musicModal = document.getElementById('musicMenuModal');
+    // Load initial track
+    this.loadAndPlayTrack(this.currentTrackIndex, false);
+
+    // Auto-advance to next track when track ends
+    this.musicPlayer.addEventListener('ended', () => {
+      this.playNextTrack(true);
+    });
+
+    // Auto play on first user interaction
+    const startAudioOnInteraction = () => {
+      if (this.musicPlayer && this.musicPlayer.paused && !this.musicPlayer.muted) {
+        this.musicPlayer.play().then(() => {
+          this.updateMusicUI();
+        }).catch(() => {});
+      }
+      window.removeEventListener('click', startAudioOnInteraction);
+      window.removeEventListener('keydown', startAudioOnInteraction);
+      window.removeEventListener('touchstart', startAudioOnInteraction);
+    };
+    window.addEventListener('click', startAudioOnInteraction);
+    window.addEventListener('keydown', startAudioOnInteraction);
+    window.addEventListener('touchstart', startAudioOnInteraction);
+
+    // Modal controls wiring
     const musicMenuBtn = document.getElementById('musicMenuBtn');
-    const closeMusicBtn = document.getElementById('closeMusicMenuBtn');
-    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
-    const prevBtn = document.getElementById('musicPrevBtn');
-    const nextBtn = document.getElementById('musicNextBtn');
+    const musicMenuModal = document.getElementById('musicMenuModal');
+    const closeMusicMenuBtn = document.getElementById('closeMusicMenuBtn');
 
-    if (musicMenuBtn && musicModal) {
+    if (musicMenuBtn && musicMenuModal) {
       musicMenuBtn.addEventListener('click', () => {
+        musicMenuModal.classList.add('active');
         this.renderMusicPlaylist();
-        musicModal.classList.add('active');
+        this.updateMusicUI();
       });
     }
 
-    if (closeMusicBtn && musicModal) {
-      closeMusicBtn.addEventListener('click', () => {
-        musicModal.classList.remove('active');
+    if (closeMusicMenuBtn && musicMenuModal) {
+      closeMusicMenuBtn.addEventListener('click', () => {
+        musicMenuModal.classList.remove('active');
       });
     }
 
-    if (musicModal) {
-      musicModal.addEventListener('click', (e) => {
-        if (e.target === musicModal) {
-          musicModal.classList.remove('active');
-        }
-      });
-    }
-
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
     if (playPauseBtn) {
       playPauseBtn.addEventListener('click', () => {
-        if (this.musicPlayer.paused) {
-          this.musicPlayer.play().then(() => {
-            localStorage.setItem('valepaska_music_on', 'true');
-            this.updateMusicUI();
-          }).catch(err => {
-            console.warn('Playback error:', err);
-          });
-        } else {
-          this.musicPlayer.pause();
-          localStorage.setItem('valepaska_music_on', 'false');
-          this.updateMusicUI();
-        }
+        this.toggleMusicPlayPause();
       });
     }
 
+    const prevBtn = document.getElementById('musicPrevBtn');
     if (prevBtn) {
       prevBtn.addEventListener('click', () => {
-        this.currentTrackIndex = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
-        this.loadAndPlayTrack(this.currentTrackIndex, true);
+        this.playPrevTrack(true);
       });
     }
 
+    const nextBtn = document.getElementById('musicNextBtn');
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
-        this.loadAndPlayTrack(this.currentTrackIndex, true);
+        this.playNextTrack(true);
       });
     }
 
-    // Auto play next track when current ends
-    this.musicPlayer.addEventListener('ended', () => {
-      this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
-      this.loadAndPlayTrack(this.currentTrackIndex, true);
-    });
+    const volSlider = document.getElementById('musicModalVolumeSlider');
+    if (volSlider) {
+      volSlider.value = this.musicVolume;
+      volSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.musicVolume = val;
+        this.musicPlayer.volume = val;
+        this.musicPlayer.muted = (val === 0);
+        localStorage.setItem('valepaska_music_volume', val);
+        this.updateMusicUI();
+      });
+    }
 
     this.musicPlayer.addEventListener('play', () => this.updateMusicUI());
     this.musicPlayer.addEventListener('pause', () => this.updateMusicUI());
 
-    // Gesture listeners for autoplay
-    const shouldPlay = localStorage.getItem('valepaska_music_on') !== 'false';
-    const gestureEvents = ['click', 'pointerdown', 'touchstart', 'keydown', 'mousedown'];
+    this.renderMusicPlaylist();
+    this.updateMusicUI();
+  }
 
-    const removeGestureListeners = () => {
-      gestureEvents.forEach(evt => {
-        document.removeEventListener(evt, startMusic, true);
-        window.removeEventListener(evt, startMusic, true);
-      });
-    };
+  playPrevTrack(autoplay = true) {
+    if (!this.playlist || this.playlist.length === 0) return;
+    this.currentTrackIndex = (this.currentTrackIndex - 1 + this.playlist.length) % this.playlist.length;
+    this.loadAndPlayTrack(this.currentTrackIndex, autoplay);
+  }
 
-    const startMusic = () => {
-      if (localStorage.getItem('valepaska_music_on') === 'false') return;
-      if (!this.musicPlayer || !this.musicPlayer.paused) return;
+  playNextTrack(autoplay = true) {
+    if (!this.playlist || this.playlist.length === 0) return;
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
+    this.loadAndPlayTrack(this.currentTrackIndex, autoplay);
+  }
 
-      const p = this.musicPlayer.play();
-      if (p !== undefined) {
-        p.then(() => {
-          localStorage.setItem('valepaska_music_on', 'true');
-          this.updateMusicUI();
-          removeGestureListeners();
-        }).catch(() => {});
-      }
-    };
-
-    gestureEvents.forEach(evt => {
-      document.addEventListener(evt, startMusic, { capture: true });
-      window.addEventListener(evt, startMusic, { capture: true });
-    });
-
-    // Initial setup
-    if (this.currentTrackIndex > 0) {
-      this.loadAndPlayTrack(this.currentTrackIndex, shouldPlay);
+  toggleMusicPlayPause() {
+    if (!this.musicPlayer) return;
+    if (this.musicPlayer.paused) {
+      this.musicPlayer.play().then(() => {
+        this.updateMusicUI();
+      }).catch(e => console.warn('Music play failed:', e));
     } else {
+      this.musicPlayer.pause();
       this.updateMusicUI();
-      if (shouldPlay) startMusic();
     }
   }
 
@@ -709,34 +699,34 @@ class GameApp {
     const track = this.playlist[index];
     localStorage.setItem('valepaska_selected_track', track.id);
 
-    // Update audio source
+    this.musicPlayer.pause();
     this.musicPlayer.innerHTML = `
       <source src="${track.file}" type="audio/mp4">
       <source src="${track.fallback}" type="audio/mpeg">
     `;
     this.musicPlayer.load();
 
-    if (autoplay && localStorage.getItem('valepaska_music_on') !== 'false') {
-      const p = this.musicPlayer.play();
-      if (p !== undefined) {
-        p.then(() => {
-          this.updateMusicUI();
-        }).catch(err => {
-          console.warn(`Tiedostoa ${track.file} ei voitu toistaa. Varmista että se on static/-kansiossa!`, err);
-        });
-      }
+    if (autoplay) {
+      this.musicPlayer.play().then(() => {
+        this.updateMusicUI();
+      }).catch(e => {
+        console.warn('Autoplay blocked:', e);
+        this.updateMusicUI();
+      });
+    } else {
+      this.updateMusicUI();
     }
-    this.updateMusicUI();
+
     this.renderMusicPlaylist();
   }
 
   updateMusicUI() {
     if (!this.musicPlayer || !this.playlist) return;
-    const isPlaying = !this.musicPlayer.paused;
     const track = this.playlist[this.currentTrackIndex] || this.playlist[0];
+    const isPlaying = !this.musicPlayer.paused;
 
-    const headerTitle = document.getElementById('headerTrackTitle');
-    if (headerTitle) headerTitle.textContent = track.title;
+    const headerTrackTitle = document.getElementById('headerTrackTitle');
+    if (headerTrackTitle) headerTrackTitle.textContent = track.title;
 
     const modalTitle = document.getElementById('modalTrackTitle');
     if (modalTitle) modalTitle.textContent = track.title;
@@ -744,21 +734,26 @@ class GameApp {
     const modalArtist = document.getElementById('modalTrackArtist');
     if (modalArtist) modalArtist.textContent = track.artist;
 
+    const musicPill = document.getElementById('musicMenuBtn');
+    if (musicPill) {
+      musicPill.classList.toggle('playing', isPlaying);
+    }
+
+    const eq = document.getElementById('musicEqualizer');
+    if (eq) {
+      eq.classList.toggle('playing', isPlaying);
+    }
+
     const playPauseBtn = document.getElementById('musicPlayPauseBtn');
-    if (playPauseBtn) playPauseBtn.textContent = isPlaying ? '⏸' : '▶';
-
-    const equalizer = document.getElementById('musicEqualizer');
-    if (equalizer) equalizer.classList.toggle('playing', isPlaying);
-
-    const musicBtnIcon = document.getElementById('musicBtnIcon');
-    if (musicBtnIcon) musicBtnIcon.textContent = isPlaying ? '🎶' : '🎵';
+    if (playPauseBtn) {
+      playPauseBtn.textContent = isPlaying ? '⏸' : '▶';
+    }
   }
 
   renderMusicPlaylist() {
     const container = document.getElementById('musicPlaylistContainer');
     if (!container || !this.playlist) return;
     container.innerHTML = '';
-
     const isPlaying = this.musicPlayer && !this.musicPlayer.paused;
 
     this.playlist.forEach((track, idx) => {
@@ -784,6 +779,9 @@ class GameApp {
     });
   }
 
+  /* ==========================================================================
+     API & WEBSOCKET NETWORKING
+     ========================================================================== */
   getApiBase() {
     const params = new URLSearchParams(window.location.search);
     const serverParam = params.get('server') || localStorage.getItem('valepaska_server_url');
@@ -836,7 +834,7 @@ class GameApp {
     } catch (e) {
       console.warn('API create_room failed, generating local code:', e);
     }
-    // Fallback: generate local 4-letter code
+    // Fallback local code
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 4; i++) code += letters[Math.floor(Math.random() * letters.length)];
@@ -870,14 +868,11 @@ class GameApp {
       this.ws = new WebSocket(wsUrl);
     } catch (err) {
       console.error('Failed to construct WebSocket:', err);
-      alert((this.lang === 'fi')
-        ? `Yhteysvirhe: Ei voitu yhdistää osoitteeseen ${wsUrl}. Varmista että palvelin on käynnissä (python3 server.py)!`
-        : `Connection error: Could not connect to ${wsUrl}. Make sure server is running (python3 server.py)!`);
+      alert(`Yhteysvirhe: Ei voitu yhdistää osoitteeseen ${wsUrl}. Varmista että palvelin on käynnissä!`);
       return;
     }
 
     this.ws.onopen = () => {
-      // Send join room message
       this.sendWS({
         type: 'join_room',
         room_id: this.roomId,
@@ -897,7 +892,7 @@ class GameApp {
     };
 
     this.ws.onclose = () => {
-      console.warn('WS disconnected. Attempting to reconnect in 2.5s...');
+      console.warn('WS disconnected. Reconnecting in 2.5s...');
       this.reconnectTimer = setTimeout(() => {
         if (this.roomId) {
           this.connectToRoom(this.roomId);
@@ -923,8 +918,13 @@ class GameApp {
       localStorage.setItem('valepaska_pid', this.playerId);
       const codeDisplay = document.getElementById('roomCodeDisplay');
       if (codeDisplay) codeDisplay.textContent = msg.room_id;
+
       const headerCode = document.getElementById('headerRoomCode');
-      if (headerCode) headerCode.textContent = msg.room_id;
+      if (headerCode) {
+        const text = headerCode.querySelector('.room-pill-text');
+        if (text) text.textContent = msg.room_id;
+        else headerCode.textContent = msg.room_id;
+      }
 
       if (msg.chat_history && Array.isArray(msg.chat_history)) {
         const box = document.getElementById('chatMessagesBox');
@@ -937,7 +937,7 @@ class GameApp {
       this.state = msg.state;
       this.isHost = msg.is_host;
 
-      // Always clear Arabia swap state on updates so no cards stay stuck in swap mode
+      // Always clear Arabia swap state on updates
       this.selectedHandSwapIndex = null;
       this.selectedTableSwapIndex = null;
 
@@ -948,7 +948,7 @@ class GameApp {
         this.selectedCardIndices.clear();
         this.selectedTableUpIndices.clear();
       } else {
-        // Remove any out-of-bounds selection indices (e.g. after playing a card)
+        // Prevent sticky card selection bug
         for (const idx of Array.from(this.selectedCardIndices)) {
           if (idx >= me.hand.length) {
             this.selectedCardIndices.delete(idx);
@@ -968,12 +968,10 @@ class GameApp {
   handleStateAudio(oldState, newState) {
     if (!oldState) return;
 
-    // Challenge window opened
     if (newState.status === 'CHALLENGE_WINDOW' && oldState.status !== 'CHALLENGE_WINDOW') {
       window.sounds.playChallengeAlert();
     }
 
-    // Reveal pause (challenge result)
     if (newState.status === 'REVEAL_PAUSE' && oldState.status !== 'REVEAL_PAUSE') {
       if (newState.reveal_info) {
         if (newState.reveal_info.lied) {
@@ -984,31 +982,29 @@ class GameApp {
       }
     }
 
-    // Pile cleared (Kaatuu)
     if (newState.dead_pile_count > oldState.dead_pile_count) {
       window.sounds.playKaatuu();
     }
 
-    // Normal play
     if (newState.play_pile.length > oldState.play_pile.length) {
       window.sounds.playCardSnap();
     }
 
-    // Pickup
     if (newState.play_pile.length === 0 && oldState.play_pile.length > 0 && newState.status === 'PLAYING') {
       window.sounds.playPickup();
     }
 
-    // Game Over
     if (newState.status === 'GAME_OVER' && oldState.status !== 'GAME_OVER') {
       window.sounds.playToiletFlush();
     }
   }
 
+  /* ==========================================================================
+     RENDER ENGINE
+     ========================================================================== */
   render() {
     if (!this.state) return;
 
-    // Switch screen depending on status
     const lobbyScreen = document.getElementById('lobbyScreen');
     const gameScreen = document.getElementById('gameScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
@@ -1085,7 +1081,9 @@ class GameApp {
       if (waitSec) waitSec.style.display = 'block';
       if (headerCode) {
         headerCode.style.display = 'flex';
-        headerCode.textContent = this.state.room_id;
+        const text = headerCode.querySelector('.room-pill-text');
+        if (text) text.textContent = this.state.room_id;
+        else headerCode.textContent = this.state.room_id;
       }
       if (leaveBtn) leaveBtn.style.display = 'flex';
     } else {
@@ -1095,15 +1093,16 @@ class GameApp {
       if (leaveBtn) leaveBtn.style.display = 'none';
     }
 
-    // Show lobby room code
     const codeDisplay = document.getElementById('roomCodeDisplay');
     if (codeDisplay) codeDisplay.textContent = this.state.room_id;
 
-    // Host controls visibility
-    document.getElementById('startGameBtn').style.display = this.isHost ? 'block' : 'none';
-    document.getElementById('addBotBtn').style.display = this.isHost ? 'block' : 'none';
+    // Host controls
+    const startBtn = document.getElementById('startGameBtn');
+    const addBotBtn = document.getElementById('addBotBtn');
+    if (startBtn) startBtn.style.display = this.isHost ? 'flex' : 'none';
+    if (addBotBtn) addBotBtn.style.display = this.isHost ? 'flex' : 'none';
 
-    // Disable rule inputs for non-host
+    // Disable rules for non-host
     ['ruleGameMode', 'ruleCourt', 'ruleTwo', 'ruleEmptyTen'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = !this.isHost;
@@ -1121,34 +1120,35 @@ class GameApp {
       setVal('ruleEmptyTen', r.empty_ten_ace);
     }
 
-    // Render players in lobby
+    // Players in lobby
     const container = document.getElementById('lobbyPlayersGrid');
-    container.innerHTML = '';
-    this.state.players.forEach(p => {
-      const chip = document.createElement('div');
-      chip.className = 'player-lobby-chip';
-      if (p.id === this.playerId) chip.style.borderColor = 'var(--gold)';
+    if (container) {
+      container.innerHTML = '';
+      this.state.players.forEach(p => {
+        const chip = document.createElement('div');
+        chip.className = 'player-lobby-chip';
+        if (p.id === this.playerId) chip.style.borderColor = 'var(--gold)';
 
-      chip.innerHTML = `
-        <span class="player-chip-avatar">${p.avatar}</span>
-        <div>
-          <span class="player-chip-name">${p.name}</span>
-          ${p.id === this.state.players[0]?.id ? '<span class="player-chip-badge">HOST</span>' : ''}
-          ${p.is_bot ? '<span class="player-chip-badge">BOT</span>' : ''}
-        </div>
-        ${this.isHost && p.is_bot ? `<button class="remove-bot-btn" data-bot-id="${p.id}">✖</button>` : ''}
-      `;
-      container.appendChild(chip);
-    });
-
-    // Attach bot removal listeners
-    container.querySelectorAll('.remove-bot-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const botId = btn.getAttribute('data-bot-id');
-        this.sendWS({ type: 'remove_bot', bot_id: botId });
+        chip.innerHTML = `
+          <span class="player-chip-avatar">${p.avatar}</span>
+          <div>
+            <span class="player-chip-name">${p.name}</span>
+            ${p.id === this.state.players[0]?.id ? '<span class="player-chip-badge">HOST</span>' : ''}
+            ${p.is_bot ? '<span class="player-chip-badge">BOT</span>' : ''}
+          </div>
+          ${this.isHost && p.is_bot ? `<button class="remove-bot-btn" data-bot-id="${p.id}" title="Poista botti">✖</button>` : ''}
+        `;
+        container.appendChild(chip);
       });
-    });
+
+      container.querySelectorAll('.remove-bot-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const botId = btn.getAttribute('data-bot-id');
+          this.sendWS({ type: 'remove_bot', bot_id: botId });
+        });
+      });
+    }
   }
 
   renderGameTable() {
@@ -1158,146 +1158,134 @@ class GameApp {
 
     // 1. Render Opponents
     const oppArea = document.getElementById('opponentsArea');
-    oppArea.innerHTML = '';
-    opponents.forEach(p => {
-      const seat = document.createElement('div');
-      seat.className = 'opponent-seat';
-      if (this.state.current_player_id === p.id && this.state.status === 'PLAYING') {
-        seat.classList.add('active');
-      }
+    if (oppArea) {
+      oppArea.innerHTML = '';
+      opponents.forEach(p => {
+        const seat = document.createElement('div');
+        seat.className = 'opponent-seat';
+        if (this.state.current_player_id === p.id && this.state.status === 'PLAYING') {
+          seat.classList.add('active');
+        }
 
-      let speechHtml = '';
-      if (this.state.challenge && this.state.challenge.player_id === p.id) {
-        speechHtml = `
-          <div class="speech-bubble">
-            ${this.state.challenge.cards_count}x ${this.state.challenge.declared_rank}!
+        let oppTableHtml = '';
+        if (this.state.rules.mode === 'arabia') {
+          oppTableHtml = '<div class="opp-table-cards-section">';
+          oppTableHtml += `<div class="opp-table-cards-label">Pöytä</div>`;
+          oppTableHtml += '<div class="opp-table-cards">';
+          for (let s = 0; s < 3; s++) {
+            const upCard = (p.table_up && p.table_up[s]) || null;
+            const hasDown = (p.table_down_count && s < p.table_down_count);
+            if (upCard || hasDown) {
+              oppTableHtml += `<div class="opp-table-slot">`;
+              if (hasDown && upCard) {
+                oppTableHtml += `<div class="opp-down-layer"></div>`;
+              }
+              if (upCard) {
+                const isRed = isRedSuit(upCard.suit);
+                const suitSym = SUIT_SYMBOLS[upCard.suit] || upCard.suit;
+                oppTableHtml += `
+                  <div class="opp-mini-card ${isRed ? 'suit-red' : 'suit-black'}" title="${upCard.rank} ${SUIT_NAMES_FI[upCard.suit] || ''}">
+                    <span class="opp-mini-rank">${upCard.rank}</span>
+                    <span class="opp-mini-suit">${suitSym}</span>
+                  </div>
+                `;
+              } else if (hasDown) {
+                oppTableHtml += `
+                  <div class="opp-mini-card opp-mini-card-back" title="Kääntämätön pöytäkortti">
+                    🂠
+                  </div>
+                `;
+              }
+              oppTableHtml += `</div>`;
+            }
+          }
+          oppTableHtml += '</div></div>';
+        }
+
+        seat.innerHTML = `
+          <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
+          <div class="opponent-seat-inner">
+            <div class="opponent-identity">
+              <div class="opponent-avatar-box">
+                ${p.avatar}
+                <div class="opponent-cards-badge">🂠 ${p.card_count}</div>
+              </div>
+              <div class="opponent-name">${p.name}</div>
+              <div class="opponent-status-tag">
+                ${p.is_out ? `🏆 #${p.finish_rank}` : (this.state.current_player_id === p.id ? 'VUOROSSA' : '')}
+              </div>
+            </div>
+            ${oppTableHtml}
           </div>
         `;
-      }
+        oppArea.appendChild(seat);
+      });
+    }
 
-      // In Arabia, render opponent's table cards with clear, high-contrast mini cards
-      let oppTableHtml = '';
-      if (this.state.rules.mode === 'arabia') {
-        oppTableHtml = '<div class="opp-table-cards-section">';
-        oppTableHtml += `<div class="opp-table-cards-label">${this.lang === 'fi' ? 'Pöytä' : 'Table'}</div>`;
-        oppTableHtml += '<div class="opp-table-cards">';
-        for (let s = 0; s < 3; s++) {
-          const upCard = (p.table_up && p.table_up[s]) || null;
-          const hasDown = (p.table_down_count && s < p.table_down_count);
-          if (upCard || hasDown) {
-            oppTableHtml += `<div class="opp-table-slot">`;
-            if (hasDown && upCard) {
-              oppTableHtml += `<div class="opp-down-layer"></div>`;
-            }
-            if (upCard) {
-              const isRed = isRedSuit(upCard.suit);
-              const suitSym = SUIT_SYMBOLS[upCard.suit] || upCard.suit;
-              const suitName = this.lang === 'fi' ? (SUIT_NAMES_FI[upCard.suit] || '') : (SUIT_NAMES_EN[upCard.suit] || '');
-              oppTableHtml += `
-                <div class="opp-mini-card ${isRed ? 'suit-red' : 'suit-black'}" title="${upCard.rank} ${suitName}">
-                  <span class="opp-mini-rank">${upCard.rank}</span>
-                  <span class="opp-mini-suit">${suitSym}</span>
-                </div>
-              `;
-            } else if (hasDown) {
-              oppTableHtml += `
-                <div class="opp-mini-card opp-mini-card-back" title="${this.lang === 'fi' ? 'Kääntämätön pöytäkortti' : 'Face-down table card'}">
-                  🂠
-                </div>
-              `;
-            }
-            oppTableHtml += `</div>`;
-          }
-        }
-        oppTableHtml += '</div></div>';
-      }
-
-      seat.innerHTML = `
-        <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
-        <div class="opponent-seat-inner">
-          <div class="opponent-identity">
-            <div class="opponent-avatar-box">
-              ${p.avatar}
-              <div class="opponent-cards-badge">🂠 ${p.card_count}</div>
-            </div>
-            <div class="opponent-name">${p.name}</div>
-            <div class="opponent-status-tag">
-              ${p.is_out ? `🏆 #${p.finish_rank}` : (this.state.current_player_id === p.id ? (this.lang === 'fi' ? 'VUOROSSA' : 'TURN') : '')}
-            </div>
-          </div>
-          ${oppTableHtml}
-        </div>
-        ${speechHtml}
-      `;
-      oppArea.appendChild(seat);
-    });
-
-    // 2. Render Deck
+    // 2. Render Deck Counter
     const deckCountEl = document.getElementById('deckCountBadge');
     if (deckCountEl) {
-      deckCountEl.textContent = `${this.state.draw_deck_count} ${this.t('deckCount').toLowerCase()}`;
+      deckCountEl.textContent = `${this.state.draw_deck_count} pakka`;
     }
 
     // 3. Render Cleared Counter
     const deadCountEl = document.getElementById('deadCountBadge');
     if (deadCountEl) {
-      deadCountEl.textContent = `${this.state.dead_pile_count} ${this.t('clearedCount').toLowerCase()}`;
+      deadCountEl.textContent = `${this.state.dead_pile_count} kaadettu`;
     }
 
-    // 4. Render Discard Pile
+    // 4. Render Discard / Play Pile
     const pileArea = document.getElementById('playPileArea');
-    pileArea.innerHTML = '';
-
-    const hasSelection = (this.selectedCardIndices.size > 0 || this.selectedTableUpIndices.size > 0);
-    if (isMyTurn && hasSelection) {
-      pileArea.classList.add('can-play-here');
-      pileArea.title = this.lang === 'fi' ? 'Pelaa valitut kortit pöytään klikkaamalla tai vetämällä!' : 'Click or drop to play selected cards!';
-    } else {
-      pileArea.classList.remove('can-play-here');
-      pileArea.title = '';
-    }
-
-    if (this.state.play_pile.length === 0) {
-      pileArea.innerHTML = `
-        <div class="pile-empty-slot">
-          <span>${this.t('emptyPile')}</span>
-        </div>
-      `;
-    } else {
-      // Display top declared rank tag
-      if (this.state.top_declared_rank) {
-        const topTag = document.createElement('div');
-        topTag.className = 'top-declared-tag';
-        topTag.textContent = `${this.lang === 'fi' ? 'Pöydässä' : 'Top'}: ${this.state.top_declared_rank}`;
-        pileArea.appendChild(topTag);
+    if (pileArea) {
+      pileArea.innerHTML = '';
+      const hasSelection = (this.selectedCardIndices.size > 0 || this.selectedTableUpIndices.size > 0);
+      if (isMyTurn && hasSelection) {
+        pileArea.classList.add('can-play-here');
+        pileArea.title = 'Pelaa valitut kortit pöytään klikkaamalla tai vetämällä!';
+      } else {
+        pileArea.classList.remove('can-play-here');
+        pileArea.title = '';
       }
 
-      // Display pile size tag
-      const sizeTag = document.createElement('div');
-      sizeTag.className = 'pile-size-tag';
-      sizeTag.textContent = `${this.state.play_pile.length} kpl`;
-      pileArea.appendChild(sizeTag);
+      if (this.state.play_pile.length === 0) {
+        pileArea.innerHTML = `
+          <div class="pile-placeholder">
+            <span class="pile-empty-icon">🂠</span>
+            <span class="pile-empty-text">Pöytä on tyhjä</span>
+          </div>
+        `;
+      } else {
+        if (this.state.top_declared_rank) {
+          const topTag = document.createElement('div');
+          topTag.className = 'top-declared-tag';
+          topTag.textContent = `Pöydässä: ${this.state.top_declared_rank}`;
+          pileArea.appendChild(topTag);
+        }
 
-      // Render visible stacked cards (show up to top 5 cards for realism)
-      const visibleCount = Math.min(this.state.play_pile.length, 5);
-      const startIdx = this.state.play_pile.length - visibleCount;
+        const sizeTag = document.createElement('div');
+        sizeTag.className = 'pile-size-tag';
+        sizeTag.textContent = `${this.state.play_pile.length} kpl`;
+        pileArea.appendChild(sizeTag);
 
-      for (let i = startIdx; i < this.state.play_pile.length; i++) {
-        const entry = this.state.play_pile[i];
-        const cardWrapper = document.createElement('div');
-        cardWrapper.className = 'pile-card-wrapper';
+        const visibleCount = Math.min(this.state.play_pile.length, 5);
+        const startIdx = this.state.play_pile.length - visibleCount;
 
-        // Deterministic slight angle rotation based on card index
-        const angle = ((i * 37) % 25) - 12;
-        const offsetX = ((i * 19) % 16) - 8;
-        const offsetY = ((i * 23) % 16) - 8;
-        cardWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${angle}deg)`;
+        for (let i = startIdx; i < this.state.play_pile.length; i++) {
+          const entry = this.state.play_pile[i];
+          const cardWrapper = document.createElement('div');
+          cardWrapper.className = 'pile-card-wrapper';
 
-        const cardEl = createCardElement(entry.card, {
-          faceDown: !entry.revealed
-        });
-        cardWrapper.appendChild(cardEl);
-        pileArea.appendChild(cardWrapper);
+          const angle = ((i * 37) % 24) - 12;
+          const offsetX = ((i * 19) % 14) - 7;
+          const offsetY = ((i * 23) % 14) - 7;
+          cardWrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${angle}deg)`;
+
+          const cardEl = createCardElement(entry.card, {
+            faceDown: !entry.revealed
+          });
+          cardWrapper.appendChild(cardEl);
+          pileArea.appendChild(cardWrapper);
+        }
       }
     }
 
@@ -1309,12 +1297,10 @@ class GameApp {
       document.getElementById('challengeClaimDisplay').textContent = `${c.cards_count}x ${c.declared_rank}`;
       document.getElementById('challengePlayerName').textContent = `${c.player_name} ${this.t('claimedCards')}`;
 
-      // Show/hide challenge and pass buttons for this client
       const canChallenge = c.can_challenge && !c.has_passed;
       document.getElementById('challengeBtn').style.display = canChallenge ? 'block' : 'none';
       document.getElementById('passBtn').style.display = canChallenge ? 'block' : 'none';
 
-      // Update timer bar animation
       this.updateChallengeTimer(c.ends_at);
     } else {
       challengeBanner.style.display = 'none';
@@ -1324,23 +1310,22 @@ class GameApp {
       }
     }
 
-    // 6. Render Reveal Screen
+    // 6. Render Reveal Overlay
     const revealOverlay = document.getElementById('revealOverlay');
     if (this.state.status === 'REVEAL_PAUSE' && this.state.reveal_info) {
       revealOverlay.style.display = 'flex';
       const r = this.state.reveal_info;
       const verdictEl = document.getElementById('revealVerdict');
-      verdictEl.className = `reveal-verdict ${r.lied ? 'lied' : 'honest'}`;
+      verdictEl.className = `reveal-verdict-title ${r.lied ? 'lied' : 'honest'}`;
       verdictEl.textContent = r.lied ? this.t('liarCaught') : this.t('honestPlayer');
 
       const detailsEl = document.getElementById('revealDetails');
       if (r.lied) {
-        detailsEl.textContent = `${r.target_name} ${this.lang === 'fi' ? 'jäi kiinni valheesta ja nostaa pöydän!' : 'was caught bluffing and picks up the pile!'}`;
+        detailsEl.textContent = `${r.target_name} jäi kiinni valheesta ja nostaa pöydän!`;
       } else {
-        detailsEl.textContent = `${r.challenger_name} ${this.lang === 'fi' ? 'haastoi väärin ja joutuu nostamaan pöydän!' : 'challenged incorrectly and picks up the pile!'}`;
+        detailsEl.textContent = `${r.challenger_name} haastoi väärin ja joutuu nostamaan pöydän!`;
       }
 
-      // Render actual cards revealed
       const cardsRow = document.getElementById('revealedCardsRow');
       cardsRow.innerHTML = '';
       r.actual_cards.forEach(c => {
@@ -1351,7 +1336,7 @@ class GameApp {
       revealOverlay.style.display = 'none';
     }
 
-    // 7. Render Player's Table Cards (Arabia)
+    // 7. Render Player Table Cards (Arabia)
     const tableCardsContainer = document.getElementById('playerTableCardsContainer');
     const tableCardSlots = document.getElementById('tableCardSlots');
     const swapHintTag = document.getElementById('swapHintTag');
@@ -1364,13 +1349,9 @@ class GameApp {
       if (swapHintTag) {
         swapHintTag.style.display = !this.state.first_kaato_done ? 'inline-block' : 'none';
         if (canSwap) {
-          swapHintTag.textContent = this.lang === 'fi' 
-            ? '💡 Vaihto sallittu & kuvat (J, Q, K, A) lukittu 1. kaatoon asti' 
-            : '💡 Swapping allowed & court cards (J, Q, K, A) locked until 1st clear';
+          swapHintTag.textContent = '💡 Vaihto sallittu & kuvat (J, Q, K, A) lukittu 1. kaatoon asti';
         } else {
-          swapHintTag.textContent = this.lang === 'fi'
-            ? '🔒 Kuvat (J, Q, K, A) lukittu 1. kaatoon asti'
-            : '🔒 Court cards (J, Q, K, A) locked until 1st clear';
+          swapHintTag.textContent = '🔒 Kuvat (J, Q, K, A) lukittu 1. kaatoon asti';
         }
       }
 
@@ -1391,10 +1372,9 @@ class GameApp {
           downWrap.appendChild(downCardEl);
           slotEl.appendChild(downWrap);
 
-          // If in blind phase and it's my turn, allow clicking blind card to flip it
           if (isPhaseBlind && !upCard && isMyTurn) {
             slotEl.classList.add('blind-active');
-            slotEl.title = this.lang === 'fi' ? 'Käännä sokkokortti pöytään!' : 'Flip blind card to pile!';
+            slotEl.title = 'Käännä sokkokortti pöytään!';
             slotEl.addEventListener('click', () => {
               window.sounds.playPop();
               this.sendWS({
@@ -1442,7 +1422,6 @@ class GameApp {
           upWrap.addEventListener('click', (e) => {
             e.stopPropagation();
 
-            // Swapping with hand card before first play
             if (canSwap) {
               if (this.selectedHandSwapIndex !== null) {
                 this.sendWS({
@@ -1463,7 +1442,6 @@ class GameApp {
               }
             }
 
-            // Phase 2: Playing from table_up
             if (isPhaseTableUp && isMyTurn) {
               if (this.selectedTableUpIndices.has(s)) {
                 this.selectedTableUpIndices.delete(s);
@@ -1489,67 +1467,24 @@ class GameApp {
       if (tableCardsContainer) tableCardsContainer.style.display = 'none';
     }
 
-    // 8. Render My Hand
+    // 8. Render Player Hand Cards
     const handContainer = document.getElementById('handCardsContainer');
-    handContainer.innerHTML = '';
-    if (me && me.hand) {
-      me.hand.forEach((card, idx) => {
-        const isSelected = this.selectedCardIndices.has(idx) || (this.selectedHandSwapIndex === idx);
-        const cardEl = createCardElement(card, {
-          selected: isSelected
-        });
-
-        // Set card z-index order
-        cardEl.style.zIndex = idx + 10;
-        cardEl.setAttribute('data-hand-index', idx);
-
-        if (isMyTurn) {
-          cardEl.setAttribute('draggable', 'true');
-
-          cardEl.addEventListener('dragstart', (e) => {
-            // If dragging, ensure this card is selected
-            if (!this.selectedCardIndices.has(idx)) {
-              if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
-                if (this.selectedCardIndices.size > 0) {
-                  const firstIdx = Array.from(this.selectedCardIndices)[0];
-                  if (me.hand[firstIdx].rank !== card.rank) {
-                    this.selectedCardIndices.clear();
-                  }
-                }
-              }
-              this.selectedCardIndices.add(idx);
-            }
-            e.dataTransfer.setData('text/plain', `hand:${idx}`);
-            e.dataTransfer.effectAllowed = 'move';
-            cardEl.classList.add('is-dragging');
-            const pile = document.getElementById('playPileArea');
-            if (pile) pile.classList.add('can-play-here');
+    if (handContainer) {
+      handContainer.innerHTML = '';
+      if (me && me.hand) {
+        me.hand.forEach((card, idx) => {
+          const isSelected = this.selectedCardIndices.has(idx) || (this.selectedHandSwapIndex === idx);
+          const cardEl = createCardElement(card, {
+            selected: isSelected
           });
 
-          cardEl.addEventListener('dragend', () => {
-            cardEl.classList.remove('is-dragging');
-            const pile = document.getElementById('playPileArea');
-            if (pile) {
-              pile.classList.remove('drag-over');
-            }
-          });
+          cardEl.style.zIndex = idx + 10;
+          cardEl.setAttribute('data-hand-index', idx);
 
-          // Mobile touch swipe up to play
-          let touchStartY = null;
-          let touchStartX = null;
-          cardEl.addEventListener('touchstart', (e) => {
-            if (!isMyTurn) return;
-            const touch = e.touches[0];
-            touchStartY = touch.clientY;
-            touchStartX = touch.clientX;
-          }, { passive: true });
+          if (isMyTurn) {
+            cardEl.setAttribute('draggable', 'true');
 
-          cardEl.addEventListener('touchend', (e) => {
-            if (!isMyTurn || touchStartY === null) return;
-            const touch = e.changedTouches[0];
-            const diffY = touchStartY - touch.clientY;
-            const diffX = Math.abs(touchStartX - touch.clientX);
-            if (diffY > 60 && diffY > diffX) {
+            cardEl.addEventListener('dragstart', (e) => {
               if (!this.selectedCardIndices.has(idx)) {
                 if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
                   if (this.selectedCardIndices.size > 0) {
@@ -1561,69 +1496,108 @@ class GameApp {
                 }
                 this.selectedCardIndices.add(idx);
               }
-              window.sounds.playPop();
-              this.handlePlayClick();
-            }
-            touchStartY = null;
-            touchStartX = null;
-          }, { passive: true });
-        }
-
-        cardEl.addEventListener('click', () => {
-          const canSwap = this.state.rules.mode === 'arabia' && me && !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
-          if (canSwap && this.selectedTableSwapIndex !== null) {
-            this.sendWS({
-              type: 'swap_table_card',
-              hand_idx: idx,
-              table_idx: this.selectedTableSwapIndex
+              e.dataTransfer.setData('text/plain', `hand:${idx}`);
+              e.dataTransfer.effectAllowed = 'move';
+              cardEl.classList.add('is-dragging');
+              const pile = document.getElementById('playPileArea');
+              if (pile) pile.classList.add('can-play-here');
             });
-            this.selectedTableSwapIndex = null;
-            this.selectedHandSwapIndex = null;
-            this.selectedCardIndices.clear();
-            window.sounds.playPop();
-            return;
+
+            cardEl.addEventListener('dragend', () => {
+              cardEl.classList.remove('is-dragging');
+              const pile = document.getElementById('playPileArea');
+              if (pile) pile.classList.remove('drag-over');
+            });
+
+            // Touch swipe-up to play
+            let touchStartY = null;
+            let touchStartX = null;
+            cardEl.addEventListener('touchstart', (e) => {
+              if (!isMyTurn) return;
+              const touch = e.touches[0];
+              touchStartY = touch.clientY;
+              touchStartX = touch.clientX;
+            }, { passive: true });
+
+            cardEl.addEventListener('touchend', (e) => {
+              if (!isMyTurn || touchStartY === null) return;
+              const touch = e.changedTouches[0];
+              const diffY = touchStartY - touch.clientY;
+              const diffX = Math.abs(touchStartX - touch.clientX);
+              if (diffY > 60 && diffY > diffX) {
+                if (!this.selectedCardIndices.has(idx)) {
+                  if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
+                    if (this.selectedCardIndices.size > 0) {
+                      const firstIdx = Array.from(this.selectedCardIndices)[0];
+                      if (me.hand[firstIdx].rank !== card.rank) {
+                        this.selectedCardIndices.clear();
+                      }
+                    }
+                  }
+                  this.selectedCardIndices.add(idx);
+                }
+                window.sounds.playPop();
+                this.handlePlayClick();
+              }
+              touchStartY = null;
+              touchStartX = null;
+            }, { passive: true });
           }
 
-          if (canSwap && !isMyTurn) {
-            this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
-            this.selectedCardIndices.clear();
-            if (this.selectedHandSwapIndex !== null) {
+          cardEl.addEventListener('click', () => {
+            const canSwap = this.state.rules.mode === 'arabia' && me && !this.state.first_kaato_done && (me.hand && me.hand.length > 0) && (me.table_up && me.table_up.length > 0);
+            if (canSwap && this.selectedTableSwapIndex !== null) {
+              this.sendWS({
+                type: 'swap_table_card',
+                hand_idx: idx,
+                table_idx: this.selectedTableSwapIndex
+              });
+              this.selectedTableSwapIndex = null;
+              this.selectedHandSwapIndex = null;
+              this.selectedCardIndices.clear();
+              window.sounds.playPop();
+              return;
+            }
+
+            if (canSwap && !isMyTurn) {
+              this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
+              this.selectedCardIndices.clear();
+              if (this.selectedHandSwapIndex !== null) {
+                this.selectedCardIndices.add(idx);
+              }
+              window.sounds.playPop();
+              this.render();
+              return;
+            }
+
+            if (!isMyTurn) return;
+
+            if (canSwap) {
+              this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
+            }
+
+            if (this.selectedCardIndices.has(idx)) {
+              this.selectedCardIndices.delete(idx);
+              if (this.selectedHandSwapIndex === idx) this.selectedHandSwapIndex = null;
+            } else {
+              if ((this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') && this.selectedCardIndices.size > 0) {
+                const firstIdx = Array.from(this.selectedCardIndices)[0];
+                const firstRank = me.hand[firstIdx].rank;
+                if (card.rank !== firstRank) {
+                  this.selectedCardIndices.clear();
+                }
+              }
               this.selectedCardIndices.add(idx);
             }
             window.sounds.playPop();
             this.render();
-            return;
-          }
+          });
 
-          if (!isMyTurn) return;
-
-          if (canSwap) {
-            this.selectedHandSwapIndex = (this.selectedHandSwapIndex === idx) ? null : idx;
-          }
-
-          if (this.selectedCardIndices.has(idx)) {
-            this.selectedCardIndices.delete(idx);
-            if (this.selectedHandSwapIndex === idx) this.selectedHandSwapIndex = null;
-          } else {
-            // In open Paskahousu & Arabia, cards played together must share the same rank
-            if ((this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') && this.selectedCardIndices.size > 0) {
-              const firstIdx = Array.from(this.selectedCardIndices)[0];
-              const firstRank = me.hand[firstIdx].rank;
-              if (card.rank !== firstRank) {
-                this.selectedCardIndices.clear();
-              }
-            }
-            this.selectedCardIndices.add(idx);
-          }
-          window.sounds.playPop();
-          this.render();
+          handContainer.appendChild(cardEl);
         });
-
-        handContainer.appendChild(cardEl);
-      });
+      }
     }
 
-    // Show leave button during game
     const leaveBtn = document.getElementById('leaveGameBtn');
     if (leaveBtn) leaveBtn.style.display = 'flex';
 
@@ -1637,28 +1611,38 @@ class GameApp {
     const hasHandSelected = this.selectedCardIndices.size > 0;
     const isBlindPhase = (this.state.rules.mode === 'arabia' && me && (!me.hand || me.hand.length === 0) && this.state.draw_deck_count === 0 && (!me.table_up || me.table_up.length === 0) && (me.table_down_count > 0));
 
-    playBtn.disabled = !isMyTurn || (!hasHandSelected && !hasTableUpSelected);
-    const selectedCount = hasTableUpSelected ? this.selectedTableUpIndices.size : this.selectedCardIndices.size;
-    const baseText = this.t('playCards');
-    const label = selectedCount > 0 ? `${baseText} (${selectedCount})` : (isBlindPhase ? (this.lang === 'fi' ? 'Käännä sokkokortti 👆' : 'Flip blind card 👆') : baseText);
-    if (playBtnText) {
-      playBtnText.textContent = label;
-    } else {
-      playBtn.textContent = label;
+    if (playBtn) {
+      playBtn.disabled = !isMyTurn || (!hasHandSelected && !hasTableUpSelected);
+      const selectedCount = hasTableUpSelected ? this.selectedTableUpIndices.size : this.selectedCardIndices.size;
+      const isMobile = window.innerWidth <= 480;
+      const baseText = isMobile ? 'Pelaa' : this.t('playCards');
+      const label = selectedCount > 0 ? `${baseText} (${selectedCount})` : (isBlindPhase ? (isMobile ? 'Sokkokortti 👆' : 'Käännä sokkokortti 👆') : baseText);
+      if (playBtnText) {
+        playBtnText.textContent = label;
+      } else {
+        playBtn.textContent = label;
+      }
     }
 
-    flipBtn.disabled = !isMyTurn || this.state.draw_deck_count === 0 || hasTableUpSelected;
-    pickupBtn.disabled = !isMyTurn || this.state.play_pile.length === 0;
+    if (flipBtn) {
+      flipBtn.disabled = !isMyTurn || this.state.draw_deck_count === 0 || hasTableUpSelected;
+    }
 
-    // Turn indicator in bottom area
+    if (pickupBtn) {
+      pickupBtn.disabled = !isMyTurn || this.state.play_pile.length === 0;
+    }
+
+    // Turn indicator
     const turnLabel = document.getElementById('currentTurnLabel');
     if (turnLabel) {
       if (isMyTurn) {
         turnLabel.textContent = this.t('turnYou');
         turnLabel.style.color = 'var(--gold)';
+        turnLabel.style.borderColor = 'var(--border-gold)';
       } else {
         turnLabel.textContent = `${this.t('turnOther')}${this.state.current_player_name || ''}`;
         turnLabel.style.color = 'var(--text-muted)';
+        turnLabel.style.borderColor = 'var(--border-subtle)';
       }
     }
   }
@@ -1703,16 +1687,15 @@ class GameApp {
     const selectedCards = Array.from(this.selectedCardIndices).map(i => me.hand[i]);
 
     if (this.state.rules.mode === 'paskahousu' || this.state.rules.mode === 'arabia') {
-      // In Open Paskahousu and Arabia, declared rank is the actual rank of the cards
       const declaredRank = selectedCards[0].rank;
 
-      // In Arabia, court cards (J, Q, K, A) cannot be played before the first kaato
+      // In Arabia: Court cards locked until first pile clear
       if (this.state.rules.mode === 'arabia' && !this.state.first_kaato_done && ['J', 'Q', 'K', 'A'].includes(declaredRank)) {
         this.showTableBubble({
           player_id: this.playerId,
           name: this.playerName,
           avatar: '🔒',
-          text: this.lang === 'fi' ? 'Kuvakortteja (J, Q, K, A) saa pelata vasta 1. kaadon jälkeen!' : 'Court cards locked until first pile clear!'
+          text: 'Kuvakortteja (J, Q, K, A) saa pelata vasta 1. kaadon jälkeen!'
         });
         window.sounds.playPop();
         return;
@@ -1720,16 +1703,15 @@ class GameApp {
 
       this.executePlayCards(declaredRank, 'hand');
     } else {
-      // In Valepaskahousu, open the Bluff Declaration Modal!
       this.openBluffModal(selectedCards);
     }
   }
 
   openBluffModal(selectedCards) {
     const modal = document.getElementById('bluffModal');
+    if (!modal) return;
     modal.classList.add('active');
 
-    // Pre-select the honest rank by default for player's convenience
     const defaultRank = selectedCards[0].rank;
     this.bluffDeclaredRank = defaultRank;
 
@@ -1738,7 +1720,8 @@ class GameApp {
       btn.classList.toggle('selected', r === defaultRank);
     });
 
-    document.getElementById('bluffModalQty').textContent = `${selectedCards.length}x`;
+    const qtyEl = document.getElementById('bluffModalQty');
+    if (qtyEl) qtyEl.textContent = `${selectedCards.length}x`;
   }
 
   executePlayCards(declaredRank, source = 'hand') {
@@ -1763,37 +1746,44 @@ class GameApp {
 
   renderGameOver() {
     const list = document.getElementById('gameWinnersList');
-    list.innerHTML = '';
+    if (list) {
+      list.innerHTML = '';
+      this.state.winners.forEach((wid, idx) => {
+        const p = this.state.players.find(pl => pl.id === wid);
+        if (p) {
+          const row = document.createElement('div');
+          row.className = 'winner-row';
+          row.innerHTML = `
+            <span class="winner-rank">#${idx + 1} 🏆</span>
+            <span>${p.avatar} ${p.name}</span>
+            <span>${p.stats?.bluffs_successful || 0} bluffia onnistui</span>
+          `;
+          list.appendChild(row);
+        }
+      });
+    }
 
-    // Render podium
-    this.state.winners.forEach((wid, idx) => {
-      const p = this.state.players.find(pl => pl.id === wid);
-      if (p) {
-        const row = document.createElement('div');
-        row.className = 'winner-row';
-        row.innerHTML = `
-          <span class="winner-rank">#${idx + 1} 🏆</span>
-          <span>${p.avatar} ${p.name}</span>
-          <span>${p.stats?.bluffs_successful || 0} ${this.lang === 'fi' ? 'bluffia onnistui' : 'bluffs succeeded'}</span>
-        `;
-        list.appendChild(row);
-      }
-    });
-
-    // Render the Paskahousu
     const loser = this.state.players.find(p => p.id === this.state.paskahousu_id);
     const loserNameEl = document.getElementById('paskahousuLoserName');
     if (loser && loserNameEl) {
       loserNameEl.textContent = `${loser.avatar} ${loser.name}`;
     }
 
-    // Host replay button visibility
-    document.getElementById('playAgainBtn').style.display = this.isHost ? 'block' : 'none';
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    if (playAgainBtn) {
+      playAgainBtn.style.display = this.isHost ? 'flex' : 'none';
+    }
   }
 
   handleChatMessage(msg) {
     this.appendChatMessage(msg);
     this.showTableBubble(msg);
+
+    const chatDrawer = document.getElementById('chatDrawer');
+    const unreadDot = document.getElementById('chatUnreadDot');
+    if (chatDrawer && !chatDrawer.classList.contains('open') && unreadDot) {
+      unreadDot.style.display = 'block';
+    }
   }
 
   showTableBubble(msg) {
@@ -1814,11 +1804,9 @@ class GameApp {
 
     if (!anchor) return;
 
-    // Detect if text is 1-4 emojis
     const emojiRegex = /^(\p{Extended_Pictographic}|\u200d|\ufe0f|\s)+$/u;
     const isEmoteOnly = emojiRegex.test(msg.text.trim()) && msg.text.trim().length <= 16;
 
-    // Clean up any old bubble in this anchor
     anchor.innerHTML = '';
 
     const bubble = document.createElement('div');
@@ -1838,7 +1826,6 @@ class GameApp {
     anchor.appendChild(bubble);
     window.sounds.playPop();
 
-    // Fade out after 4.2 seconds
     setTimeout(() => {
       bubble.classList.add('fading-out');
       setTimeout(() => {

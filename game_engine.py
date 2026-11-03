@@ -438,7 +438,14 @@ class GameState:
         top_entry = self.get_top_pile_card()
         legal, reason = self.is_rank_legal_on_pile(declared_rank, top_entry)
         if not legal:
-            return False, reason
+            # Special safeguard for Arabia: if player has ONLY court cards left, and the pile is empty,
+            # allow them to play so the game never permanently deadlocks
+            if self.rules.mode == "arabia" and not self.first_kaato_done and top_entry is None:
+                available = player.hand if source == "hand" else player.table_up
+                if available and all(c.rank in COURT_RANKS or c.rank == 'A' for c in available):
+                    legal = True
+            if not legal:
+                return False, reason
 
         # Check empty table rule for 10 and Ace (only in standard Paskahousu/Valepaskahousu)
         if top_entry is None and self.rules.mode != "arabia":

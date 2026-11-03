@@ -324,25 +324,47 @@ class Room:
                 return
 
             move = BotAI.choose_move(self.game, curr)
+            res = {"success": False}
             if move["action"] == "play":
-                self.game.play_cards(
+                res = self.game.play_cards(
                     curr.id,
                     move["card_indices"],
                     move["declared_rank"],
                     source=move.get("source", "hand")
                 )
             elif move["action"] == "play_blind":
-                self.game.play_blind_card(curr.id, move.get("card_index", 0))
+                res = self.game.play_blind_card(curr.id, move.get("card_index", 0))
             elif move["action"] == "flip_deck":
-                self.game.flip_from_deck(curr.id)
+                res = self.game.flip_from_deck(curr.id)
             elif move["action"] == "pickup":
-                self.game.pickup_pile(curr.id)
+                res = self.game.pickup_pile(curr.id)
+
+            if not res.get("success"):
+                # Safe fallbacks if move failed
+                if self.game.play_pile:
+                    res = self.game.pickup_pile(curr.id)
+                elif self.game.draw_deck:
+                    res = self.game.flip_from_deck(curr.id)
+                elif self.game.rules.mode == "arabia" and curr.table_down and not curr.table_up and not curr.hand:
+                    res = self.game.play_blind_card(curr.id, 0)
+                else:
+                    self.game._advance_turn()
 
             await self.broadcast_state()
             self.check_next_turn()
 
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            # Safeguard to prevent bot turns from ever permanently freezing the room
+            try:
+                curr = self.game.current_player()
+                if curr and curr.id == bot_id:
+                    self.game._advance_turn()
+                await self.broadcast_state()
+                self.check_next_turn()
+            except Exception:
+                pass
 
 
 class RoomManager:
