@@ -1614,8 +1614,9 @@ class GameApp {
     if (playBtn) {
       playBtn.disabled = !isMyTurn || (!hasHandSelected && !hasTableUpSelected);
       const selectedCount = hasTableUpSelected ? this.selectedTableUpIndices.size : this.selectedCardIndices.size;
-      const baseText = this.t('playCards');
-      const label = selectedCount > 0 ? `${baseText} (${selectedCount})` : (isBlindPhase ? 'Käännä sokkokortti 👆' : baseText);
+      const isMobile = window.innerWidth <= 480;
+      const baseText = isMobile ? 'Pelaa' : this.t('playCards');
+      const label = selectedCount > 0 ? `${baseText} (${selectedCount})` : (isBlindPhase ? (isMobile ? 'Sokkokortti 👆' : 'Käännä sokkokortti 👆') : baseText);
       if (playBtnText) {
         playBtnText.textContent = label;
       } else {
