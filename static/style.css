@@ -49,20 +49,20 @@
   --transition-normal: 0.25s var(--ease-smooth);
 }
 
-/* Tablet adjustments */
+/* Tablet & Desktop adjustments */
 @media (min-width: 768px) {
   :root {
-    --card-w: 80px;
-    --card-h: 116px;
+    --card-w: 92px;
+    --card-h: 132px;
     --card-radius: 10px;
   }
 }
 
-/* Desktop adjustments */
+/* Large Desktop adjustments */
 @media (min-width: 1200px) {
   :root {
-    --card-w: 88px;
-    --card-h: 128px;
+    --card-w: 104px;
+    --card-h: 148px;
     --card-radius: 12px;
   }
 }
@@ -1074,6 +1074,85 @@ input, select {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+@media (min-width: 768px) {
+  .opponents-rail {
+    min-height: 64px;
+    gap: 16px;
+    padding: 8px 8px 4px 8px;
+  }
+  .opponent-seat-inner {
+    padding: 6px 14px 6px 10px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+  .opponent-avatar-box {
+    font-size: 28px;
+  }
+  .opponent-cards-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    bottom: -6px;
+    right: -10px;
+  }
+  .opponent-name {
+    font-size: 13px;
+    max-width: 84px;
+  }
+  .opponent-status-tag {
+    font-size: 10px;
+    height: 12px;
+  }
+  .opp-table-cards-section {
+    gap: 4px;
+    padding-left: 10px;
+  }
+  .opp-table-cards-label {
+    font-size: 10px;
+  }
+  .opp-table-cards {
+    gap: 6px;
+  }
+  .opp-table-slot {
+    width: 32px;
+    height: 44px;
+  }
+  .opp-mini-rank {
+    font-size: 14px;
+  }
+  .opp-mini-suit {
+    font-size: 12px;
+  }
+  .opp-mini-card-back {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .opp-table-cards-section {
+    gap: 5px;
+    padding-left: 12px;
+  }
+  .opp-table-cards-label {
+    font-size: 11px;
+  }
+  .opp-table-cards {
+    gap: 8px;
+  }
+  .opp-table-slot {
+    width: 38px;
+    height: 52px;
+  }
+  .opp-mini-rank {
+    font-size: 16px;
+  }
+  .opp-mini-suit {
+    font-size: 14px;
+  }
+  .opp-mini-card-back {
+    font-size: 18px;
+  }
+}
+
 @media (max-width: 600px) {
   .opponent-seat-inner {
     padding: 4px 7px 4px 5px;
@@ -1113,6 +1192,28 @@ input, select {
   margin: 0 auto;
   padding: 2px 8px;
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  .table-center-stage {
+    max-height: 260px;
+    gap: 36px;
+  }
+  .deck-pattern {
+    font-size: 30px;
+  }
+  .deck-count-pill {
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    margin-top: 8px;
+  }
+  .pile-empty-icon {
+    font-size: 30px;
+  }
+  .pile-empty-text {
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1969,11 +2070,11 @@ input, select {
 }
 
 .table-card-slot .playing-card .card-rank {
-  font-size: 12px;
+  font-size: clamp(14px, 4vw, 18px);
 }
 
 .table-card-slot .playing-card .card-suit {
-  font-size: 10px;
+  font-size: clamp(12px, 3.2vw, 15px);
 }
 
 .table-slot-down {
@@ -2005,6 +2106,80 @@ input, select {
 .table-card-slot.blind-active {
   cursor: pointer;
   animation: pulseRotate 1.8s infinite ease-in-out;
+}
+
+@media (min-width: 768px) {
+  .player-table-cards-dock {
+    width: min(94%, 580px);
+    padding: 12px 20px 16px 20px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .dock-title {
+    font-size: 13px;
+  }
+  .dock-hint {
+    font-size: 12px;
+  }
+  .table-slots-row {
+    gap: 20px;
+  }
+  .table-card-slot {
+    width: var(--card-w);
+    height: var(--card-h);
+  }
+  .table-card-slot .playing-card .card-rank {
+    font-size: 32px;
+  }
+  .table-card-slot .playing-card .card-suit {
+    font-size: 26px;
+    margin-top: 4px;
+  }
+  .table-slot-down {
+    transform: translate(-4px, -4px);
+  }
+  .action-buttons-dock {
+    max-width: 580px;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .action-btn {
+    height: 44px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .player-table-cards-dock {
+    width: min(94%, 640px);
+    padding: 14px 24px 18px 24px;
+    border-radius: 22px;
+    margin-bottom: 14px;
+  }
+  .dock-title {
+    font-size: 14px;
+  }
+  .dock-hint {
+    font-size: 13px;
+  }
+  .table-slots-row {
+    gap: 24px;
+  }
+  .table-card-slot {
+    width: var(--card-w);
+    height: var(--card-h);
+  }
+  .table-card-slot .playing-card .card-rank {
+    font-size: 36px;
+  }
+  .table-card-slot .playing-card .card-suit {
+    font-size: 30px;
+    margin-top: 5px;
+  }
+  .action-buttons-dock {
+    max-width: 640px;
+  }
 }
 
 /* Action Buttons Dock */
