@@ -1298,10 +1298,6 @@ class GameApp {
     }, 2500);
   }
 
-  showBlindCardCelebration(info) {
-    this.showCardRevealCelebration(info);
-  }
-
   /* ==========================================================================
      RENDER ENGINE
      ========================================================================== */

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   TUUTAN JA EMAILIN PELIHUANE - MODERN MOBILE-FIRST CSS ARCHITECTURE
+   PUDOTUSPELIT - MODERN MOBILE-FIRST CSS ARCHITECTURE
    ========================================================================== */
 
 :root {
@@ -1979,16 +1979,6 @@ input, select {
 
 .table-card-slot .playing-card .card-suit {
   font-size: 10px;
-}
-
-.table-card-slot .playing-card .court-badge,
-.table-card-slot .playing-card .ten-icon,
-.table-card-slot .playing-card .two-icon {
-  font-size: 16px;
-}
-
-.table-card-slot .playing-card .card-center-suit {
-  font-size: 18px;
 }
 
 .table-slot-down {

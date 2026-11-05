@@ -480,7 +480,7 @@ async def main():
     local_ip = get_local_ip()
 
     print("=" * 60)
-    print(" 🃏 PASKAHOUSU & VALEPASKAHOUSU MULTIPLAYER SERVER 🃏")
+    print(" 🃏 PUDOTUSPELIT MULTIPLAYER SERVER 🃏")
     print("=" * 60)
     print(f" * Local:   http://localhost:{port}")
     if local_ip != "127.0.0.1":

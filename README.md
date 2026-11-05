@@ -18,7 +18,7 @@ python3 server.py
 Palvelin tulostaa terminaaliin liittymisosoitteet:
 ```
 ============================================================
- 🃏 TUUTAN JA EMAILIN PELIHUONE MULTIPLAYER SERVER 🃏
+ 🃏 PUDOTUSPELIT MULTIPLAYER SERVER 🃏
 ============================================================
  * Local:   http://localhost:8000
  * Network: http://192.168.1.x:8000  <-- Jaa kavereille samassa Wi-Fi-verkossa!
