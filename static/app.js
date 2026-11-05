@@ -2052,12 +2052,12 @@ class GameApp {
 
       // In Arabia: Court cards locked until first pile clear
       if (this.state.rules.mode === 'arabia' && !this.state.first_kaato_done && ['J', 'Q', 'K', 'A'].includes(declaredRank)) {
-        this.showTableBubble({
-          player_id: this.playerId,
-          name: this.playerName,
-          avatar: '🔒',
-          text: 'Kuvakortteja (J, Q, K, A) saa pelata vasta 1. kaadon jälkeen!'
-        });
+        const hintEl = document.getElementById('tableCardsSwapHint');
+        if (hintEl) {
+          hintEl.classList.remove('hint-flash');
+          void hintEl.offsetWidth;
+          hintEl.classList.add('hint-flash');
+        }
         window.sounds.playPop();
         return;
       }
