@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Pudotuspelit</title>
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=18">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -86,7 +86,7 @@
             <div class="form-group">
               <label class="form-label">Valitse hahmo</label>
               <div class="avatar-grid">
-                <button type="button" class="avatar-btn selected" data-avatar="🦊">🦊</button>
+                <button type="button" class="avatar-btn" data-avatar="🦊">🦊</button>
                 <button type="button" class="avatar-btn" data-avatar="🐻">🐻</button>
                 <button type="button" class="avatar-btn" data-avatar="🐺">🐺</button>
                 <button type="button" class="avatar-btn" data-avatar="🦅">🦅</button>
@@ -192,6 +192,9 @@
 
         <!-- Opponents Area (Top of table) -->
         <div id="opponentsArea" class="opponents-rail"></div>
+
+        <!-- Floating Bubbles Layer -->
+        <div id="tableBubbleLayer" class="table-bubble-layer"></div>
 
         <!-- Center Felt: Deck, Discard Pile & Dead Pile (Symmetrical 3-Column Center Stage) -->
         <div class="table-center-stage">
@@ -513,8 +516,8 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=14"></script>
-  <script src="audio.js?v=14"></script>
-  <script src="app.js?v=14"></script>
+  <script src="cards.js?v=18"></script>
+  <script src="audio.js?v=18"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>

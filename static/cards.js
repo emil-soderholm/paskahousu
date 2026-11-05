@@ -17,27 +17,6 @@ const SUIT_NAMES_FI = {
   C: 'Risti'
 };
 
-const SUIT_NAMES_EN = {
-  S: 'Spades',
-  H: 'Hearts',
-  D: 'Diamonds',
-  C: 'Clubs'
-};
-
-const RANK_LABELS = {
-  '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', '10': '10',
-  'J': 'J', 'Q': 'Q', 'K': 'K', 'A': 'A', '2': '2'
-};
-
-const COURT_ICONS = {
-  'J': '⚔️',
-  'Q': '👑',
-  'K': '🤴',
-  'A': '⭐',
-  '2': '⚡',
-  '10': '💥'
-};
-
 function isRedSuit(suit) {
   return suit === 'H' || suit === 'D';
 }

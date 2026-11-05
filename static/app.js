@@ -115,9 +115,7 @@ class GameApp {
 
     // Avatar picker buttons
     document.querySelectorAll('.avatar-btn').forEach(btn => {
-      if (btn.getAttribute('data-avatar') === this.playerAvatar) {
-        btn.classList.add('selected');
-      }
+      btn.classList.toggle('selected', btn.getAttribute('data-avatar') === this.playerAvatar);
       btn.addEventListener('click', () => {
         document.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
@@ -301,7 +299,8 @@ class GameApp {
         '.playing-card, .table-slot-up, .table-slot-down, .table-slot, ' +
         '.action-btn, .action-buttons-dock, button, input, textarea, select, ' +
         '.modal-overlay, .modal, .modal-content, .chat-panel, .table-chat-bar, ' +
-        '.table-chat-popover, .app-header, .music-player, .deck-station, #playPileArea'
+        '.table-chat-popover, .app-header, .music-player, .deck-station, #playPileArea, ' +
+        '.hand-scroll-wrapper, .hand-cards, .player-hand-dock, .table-cards-container'
       );
 
       if (!isCardOrControl) {
@@ -309,7 +308,7 @@ class GameApp {
         this.selectedTableUpIndices.clear();
         this.selectedHandSwapIndex = null;
         this.selectedTableSwapIndex = null;
-        this.render();
+        this.updateSelectionUI();
       }
     });
 
@@ -1299,10 +1298,6 @@ class GameApp {
     }, 2500);
   }
 
-  showBlindCardCelebration(info) {
-    this.showCardRevealCelebration(info);
-  }
-
   /* ==========================================================================
      RENDER ENGINE
      ========================================================================== */
@@ -1467,6 +1462,8 @@ class GameApp {
       opponents.forEach(p => {
         const seat = document.createElement('div');
         seat.className = 'opponent-seat';
+        seat.id = `seat-${p.id}`;
+        seat.setAttribute('data-player-id', p.id);
         if (this.state.current_player_id === p.id && this.state.status === 'PLAYING') {
           seat.classList.add('active');
         }
@@ -1507,7 +1504,6 @@ class GameApp {
         }
 
         seat.innerHTML = `
-          <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
           <div class="opponent-seat-inner">
             <div class="opponent-identity">
               <div class="opponent-avatar-box">
@@ -1693,11 +1689,13 @@ class GameApp {
         if (upCard) {
           const upWrap = document.createElement('div');
           upWrap.className = 'table-slot-up';
+          upWrap.setAttribute('data-table-index', s);
           const isSelected = this.selectedTableUpIndices.has(s) || (this.selectedTableSwapIndex === s);
           if (isSelected) upWrap.classList.add('selected');
 
           const cardEl = createCardElement(upCard);
-          if (isPhaseTableUp && isMyTurn) {
+          const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+          if (isPhaseTableUp && isMyTurn && hasFinePointer) {
             cardEl.setAttribute('draggable', 'true');
             cardEl.addEventListener('dragstart', (e) => {
               if (!this.selectedTableUpIndices.has(s)) {
@@ -1742,7 +1740,7 @@ class GameApp {
               } else {
                 this.selectedTableSwapIndex = (this.selectedTableSwapIndex === s) ? null : s;
                 window.sounds.playPop();
-                this.render();
+                this.updateSelectionUI();
                 return;
               }
             }
@@ -1761,7 +1759,7 @@ class GameApp {
                 this.selectedTableUpIndices.add(s);
               }
               window.sounds.playPop();
-              this.render();
+              this.updateSelectionUI();
             }
           });
         }
@@ -1774,6 +1772,10 @@ class GameApp {
 
     // 8. Render Player Hand Cards
     const handContainer = document.getElementById('handCardsContainer');
+    const scrollWrapper = document.querySelector('.hand-scroll-wrapper');
+    const previousScrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+    const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
     if (handContainer) {
       handContainer.innerHTML = '';
       if (me && me.hand) {
@@ -1786,7 +1788,7 @@ class GameApp {
           cardEl.style.zIndex = idx + 10;
           cardEl.setAttribute('data-hand-index', idx);
 
-          if (isMyTurn) {
+          if (isMyTurn && hasFinePointer) {
             cardEl.setAttribute('draggable', 'true');
 
             cardEl.addEventListener('dragstart', (e) => {
@@ -1813,19 +1815,20 @@ class GameApp {
               const pile = document.getElementById('playPileArea');
               if (pile) pile.classList.remove('drag-over');
             });
+          }
 
+          if (isMyTurn) {
             // Touch swipe-up to play
             let touchStartY = null;
             let touchStartX = null;
             cardEl.addEventListener('touchstart', (e) => {
-              if (!isMyTurn) return;
               const touch = e.touches[0];
               touchStartY = touch.clientY;
               touchStartX = touch.clientX;
             }, { passive: true });
 
             cardEl.addEventListener('touchend', (e) => {
-              if (!isMyTurn || touchStartY === null) return;
+              if (touchStartY === null) return;
               const touch = e.changedTouches[0];
               const diffY = touchStartY - touch.clientY;
               const diffX = Math.abs(touchStartX - touch.clientX);
@@ -1872,7 +1875,7 @@ class GameApp {
                 this.selectedCardIndices.add(idx);
               }
               window.sounds.playPop();
-              this.render();
+              this.updateSelectionUI();
               return;
             }
 
@@ -1896,11 +1899,15 @@ class GameApp {
               this.selectedCardIndices.add(idx);
             }
             window.sounds.playPop();
-            this.render();
+            this.updateSelectionUI();
           });
 
           handContainer.appendChild(cardEl);
         });
+
+        if (scrollWrapper && previousScrollLeft > 0) {
+          scrollWrapper.scrollLeft = previousScrollLeft;
+        }
       }
     }
 
@@ -1908,6 +1915,68 @@ class GameApp {
     if (leaveBtn) leaveBtn.style.display = 'flex';
 
     // 9. Update Action Buttons
+    this.updateActionButtons();
+
+    // Turn indicator
+    const turnLabel = document.getElementById('currentTurnLabel');
+    if (turnLabel) {
+      if (isMyTurn) {
+        turnLabel.textContent = this.t('turnYou');
+        turnLabel.style.color = 'var(--gold)';
+        turnLabel.style.borderColor = 'var(--border-gold)';
+      } else {
+        turnLabel.textContent = `${this.t('turnOther')}${this.state.current_player_name || ''}`;
+        turnLabel.style.color = 'var(--text-muted)';
+        turnLabel.style.borderColor = 'var(--border-subtle)';
+      }
+    }
+  }
+
+  updateSelectionUI() {
+    if (!this.state) return;
+    const me = this.state.players.find(p => p.id === this.playerId);
+    const isMyTurn = (this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+
+    // Update hand cards in-place without rebuilding DOM
+    const handContainer = document.getElementById('handCardsContainer');
+    if (handContainer) {
+      const cardEls = handContainer.querySelectorAll('.playing-card');
+      cardEls.forEach((cardEl) => {
+        const idx = parseInt(cardEl.getAttribute('data-hand-index'), 10);
+        const isSelected = this.selectedCardIndices.has(idx) || (this.selectedHandSwapIndex === idx);
+        cardEl.classList.toggle('selected', isSelected);
+      });
+    }
+
+    // Update Arabia table cards in-place
+    const tableSlotUpEls = document.querySelectorAll('.table-slot-up');
+    tableSlotUpEls.forEach((slotUp) => {
+      const s = parseInt(slotUp.getAttribute('data-table-index'), 10);
+      const isSelected = this.selectedTableUpIndices.has(s) || (this.selectedTableSwapIndex === s);
+      slotUp.classList.toggle('selected', isSelected);
+    });
+
+    // Update Play Pile highlight
+    const pileArea = document.getElementById('playPileArea');
+    if (pileArea) {
+      const hasSelection = (this.selectedCardIndices.size > 0 || this.selectedTableUpIndices.size > 0);
+      if (isMyTurn && hasSelection) {
+        pileArea.classList.add('can-play-here');
+        pileArea.title = 'Pelaa valitut kortit pöytään klikkaamalla tai vetämällä!';
+      } else {
+        pileArea.classList.remove('can-play-here');
+        pileArea.title = '';
+      }
+    }
+
+    this.updateActionButtons();
+  }
+
+  updateActionButtons() {
+    if (!this.state) return;
+    const me = this.state.players.find(p => p.id === this.playerId);
+    const isMyTurn = (this.state.current_player_id === this.playerId && this.state.status === 'PLAYING');
+
     const playBtn = document.getElementById('playCardsBtn');
     const playBtnText = document.getElementById('playCardsBtnText');
     const flipBtn = document.getElementById('flipDeckBtn');
@@ -1936,20 +2005,6 @@ class GameApp {
 
     if (pickupBtn) {
       pickupBtn.disabled = !isMyTurn || this.state.play_pile.length === 0;
-    }
-
-    // Turn indicator
-    const turnLabel = document.getElementById('currentTurnLabel');
-    if (turnLabel) {
-      if (isMyTurn) {
-        turnLabel.textContent = this.t('turnYou');
-        turnLabel.style.color = 'var(--gold)';
-        turnLabel.style.borderColor = 'var(--border-gold)';
-      } else {
-        turnLabel.textContent = `${this.t('turnOther')}${this.state.current_player_name || ''}`;
-        turnLabel.style.color = 'var(--text-muted)';
-        turnLabel.style.borderColor = 'var(--border-subtle)';
-      }
     }
   }
 
@@ -2094,29 +2149,37 @@ class GameApp {
 
   showTableBubble(msg) {
     const isMe = (msg.player_id === this.playerId || (msg.name === this.playerName && msg.avatar === this.playerAvatar));
-    let anchor = isMe 
-      ? document.getElementById('myBubbleAnchor') 
-      : (msg.player_id ? document.getElementById(`bubbleAnchor-${msg.player_id}`) : null);
+    const container = document.getElementById('tableBubbleLayer') || document.querySelector('.felt-table-wrapper');
+    if (!container) return;
 
-    if (!anchor && !isMe) {
-      const seats = document.querySelectorAll('.opponent-seat');
-      for (const s of seats) {
-        if (s.querySelector('.opponent-name')?.textContent === msg.name) {
-          anchor = s.querySelector('.table-bubble-anchor');
-          break;
+    let targetEl = null;
+    if (isMe) {
+      targetEl = document.querySelector('.player-station');
+    } else {
+      if (msg.player_id) {
+        targetEl = document.getElementById(`seat-${msg.player_id}`);
+      }
+      if (!targetEl) {
+        const seats = document.querySelectorAll('.opponent-seat');
+        for (const s of seats) {
+          if (s.querySelector('.opponent-name')?.textContent === msg.name) {
+            targetEl = s;
+            break;
+          }
         }
+      }
+      if (!targetEl) {
+        targetEl = document.querySelector('.opponents-rail');
       }
     }
 
-    if (!anchor) return;
+    if (!targetEl) return;
 
     const emojiRegex = /^(\p{Extended_Pictographic}|\u200d|\ufe0f|\s)+$/u;
     const isEmoteOnly = emojiRegex.test(msg.text.trim()) && msg.text.trim().length <= 16;
 
-    anchor.innerHTML = '';
-
     const bubble = document.createElement('div');
-    bubble.className = `floating-table-bubble ${isEmoteOnly ? 'emote-only' : ''} ${isMe ? 'my-bubble' : ''}`;
+    bubble.className = `floating-table-bubble ${isEmoteOnly ? 'emote-only' : ''} ${isMe ? 'my-bubble' : 'opponent-bubble'}`;
 
     if (isEmoteOnly) {
       bubble.innerHTML = `<span class="table-bubble-emote">${msg.text}</span>`;
@@ -2129,14 +2192,30 @@ class GameApp {
       `;
     }
 
-    anchor.appendChild(bubble);
+    const feltRect = container.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+
+    const centerX = targetRect.left + targetRect.width / 2 - feltRect.left;
+    bubble.style.left = `${centerX}px`;
+
+    if (isMe) {
+      const bottomY = feltRect.bottom - targetRect.top + 8;
+      bubble.style.bottom = `${bottomY}px`;
+      bubble.style.top = 'auto';
+    } else {
+      const topY = targetRect.bottom - feltRect.top + 6;
+      bubble.style.top = `${topY}px`;
+      bubble.style.bottom = 'auto';
+    }
+
+    container.appendChild(bubble);
     window.sounds.playPop();
 
     setTimeout(() => {
       bubble.classList.add('fading-out');
       setTimeout(() => {
-        if (bubble.parentNode === anchor) {
-          anchor.removeChild(bubble);
+        if (bubble.parentNode === container) {
+          container.removeChild(bubble);
         }
       }, 400);
     }, 4200);
