@@ -1302,14 +1302,6 @@ class GameApp {
   showBlindCardCelebration(info) {
     this.showCardRevealCelebration(info);
   }
-    this._blindTimeout = setTimeout(() => {
-      blindOverlay.classList.add('fade-out');
-      setTimeout(() => {
-        blindOverlay.style.display = 'none';
-        blindOverlay.classList.remove('animate-in', 'fade-out');
-      }, 400);
-    }, 2500);
-  }
 
   /* ==========================================================================
      RENDER ENGINE
