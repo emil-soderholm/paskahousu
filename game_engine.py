@@ -224,6 +224,7 @@ class GameState:
         self.paskahousu_id: Optional[str] = None
         self.turn_number: int = 0
         self.first_kaato_done: bool = False
+        self.action_counter: int = 0
 
     def add_log(self, text_fi: str, text_en: str, log_type: str = "info"):
         entry = {
@@ -273,6 +274,7 @@ class GameState:
         self.last_action_info = None
         self.turn_number = 1
         self.first_kaato_done = False
+        self.action_counter = 0
 
         # Reset players
         for p in self.players:
@@ -743,6 +745,7 @@ class GameState:
 
         top_entry = self.get_top_pile_card()
         legal, _ = self.is_rank_legal_on_pile(card.rank, top_entry)
+        self.action_counter += 1
 
         if legal:
             # Legal! Card is played to pile face up
@@ -762,7 +765,22 @@ class GameState:
             clears = self.will_move_clear_pile(card.rank, 1)
             if clears:
                 self._clear_pile_kaatuu(player, declared_rank=card.rank, cards_count=1)
+                if self.last_action_info:
+                    self.last_action_info["is_blind"] = True
+                    self.last_action_info["card"] = card.to_dict()
+                    self.last_action_info["action_id"] = self.action_counter
                 return {"success": True, "legal": True, "card": card.to_dict(), "cleared": True}
+
+            self.last_action_info = {
+                "type": "blind_card",
+                "action_id": self.action_counter,
+                "player_id": player.id,
+                "player_name": player.name,
+                "card": card.to_dict(),
+                "legal": True,
+                "cleared": False,
+                "continues": (card.rank == '2')
+            }
 
             # In Arabia: if blind card is a 2, player continues their turn!
             if card.rank == '2':
@@ -789,6 +807,17 @@ class GameState:
             player.sort_hand()
             player.stats["cards_picked_up"] += len(pickup_cards)
             self.play_pile = []
+
+            self.last_action_info = {
+                "type": "blind_card",
+                "action_id": self.action_counter,
+                "player_id": player.id,
+                "player_name": player.name,
+                "card": card.to_dict(),
+                "legal": False,
+                "cleared": False,
+                "picked_up": len(pickup_cards)
+            }
 
             self.add_log(
                 f"{player.name} käänsi sokkona pöydästä {card.rank}{card.suit}, ei sopinut! {player.name} joutuu nostamaan pakan ({len(pickup_cards)} kpl)!",
@@ -833,8 +862,10 @@ class GameState:
         self.play_pile = []
         player.stats["piles_cleared"] += 1
 
+        self.action_counter += 1
         self.last_action_info = {
             "type": "kaato",
+            "action_id": self.action_counter,
             "player_id": player.id,
             "player_name": player.name,
             "declared_rank": declared_rank,
@@ -1012,8 +1043,10 @@ class GameState:
             self.play_pile = []
             player.stats["piles_cleared"] += 1
 
+            self.action_counter += 1
             self.last_action_info = {
                 "type": "kaato",
+                "action_id": self.action_counter,
                 "player_id": player.id,
                 "player_name": player.name,
                 "declared_rank": cs.declared_rank,

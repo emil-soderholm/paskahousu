@@ -5,7 +5,7 @@
 
 // Finnish strings dictionary
 const FI_STRINGS = {
-  appTitle: "Tuutan ja Emailin pelihuane",
+  appTitle: "Pudotuspelit",
   tagline: "Perinteinen suomalainen korttipeli",
   createRoom: "Luo uusi pelihuone",
   joinRoom: "Liity koodilla",
@@ -81,6 +81,8 @@ class GameApp {
     this.selectedTableSwapIndex = null;
     this.bluffDeclaredRank = '3';
     this.challengeInterval = null;
+    this._lastActionId = null;
+    this._blindTimeout = null;
 
     this.initDOM();
     this.initMusic();
@@ -1033,9 +1035,18 @@ class GameApp {
       }
     }
 
+    if (newState.last_action_info && newState.last_action_info.action_id && newState.last_action_info.action_id !== this._lastActionId) {
+      this._lastActionId = newState.last_action_info.action_id;
+      if (newState.last_action_info.type === 'blind_card') {
+        this.showBlindCardCelebration(newState.last_action_info);
+      }
+    }
+
     if (newState.dead_pile_count > oldState.dead_pile_count) {
       window.sounds.playKaatuu();
-      this.showKaatoCelebration(newState.last_action_info);
+      if (!newState.last_action_info || newState.last_action_info.type !== 'blind_card') {
+        this.showKaatoCelebration(newState.last_action_info);
+      }
     }
 
     if (newState.play_pile.length > oldState.play_pile.length) {
@@ -1127,6 +1138,106 @@ class GameApp {
         kaatoOverlay.classList.remove('animate-in', 'fade-out');
       }, 400);
     }, 2000);
+  }
+
+  showBlindCardCelebration(info) {
+    const blindOverlay = document.getElementById('blindCardOverlay');
+    if (!blindOverlay) return;
+
+    const feltTable = document.querySelector('.felt-table-wrapper');
+    const deadPile = document.getElementById('deadPileArea');
+
+    const previewEl = document.getElementById('blindCardPreview');
+    const titleEl = document.getElementById('blindTitle');
+    const detailsEl = document.getElementById('blindDetails');
+    const subDetailsEl = document.getElementById('blindSubDetails');
+    const iconEl = document.getElementById('blindIcon');
+
+    blindOverlay.classList.remove('legal', 'illegal');
+    if (info.legal) {
+      blindOverlay.classList.add('legal');
+    } else {
+      blindOverlay.classList.add('illegal');
+    }
+
+    // Play sounds & effects
+    if (info.legal) {
+      if (info.cleared) {
+        window.sounds.playKaatuu();
+        if (deadPile) {
+          deadPile.classList.remove('kaato-impact');
+          void deadPile.offsetWidth;
+          deadPile.classList.add('kaato-impact');
+          setTimeout(() => deadPile.classList.remove('kaato-impact'), 1400);
+        }
+      } else {
+        window.sounds.playHonestFanfare();
+      }
+    } else {
+      window.sounds.playLiarCaught();
+    }
+
+    if (feltTable) {
+      feltTable.classList.remove('table-shake');
+      void feltTable.offsetWidth;
+      feltTable.classList.add('table-shake');
+      setTimeout(() => feltTable.classList.remove('table-shake'), 600);
+    }
+
+    // Render the revealed card preview
+    if (previewEl && info.card) {
+      previewEl.innerHTML = '';
+      const cardEl = createCardElement(info.card);
+      previewEl.appendChild(cardEl);
+    }
+
+    const pName = info.player_name || 'Pelaaja';
+    const cardRank = (info.card && info.card.rank) || '';
+    const suitSym = (info.card && SUIT_SYMBOLS[info.card.suit]) || '';
+
+    let titleText = 'SOKKOKORTTI! 🃏';
+    let detailsText = `${pName} käänsi sokkona: ${cardRank}${suitSym}`;
+    let subText = '';
+    let icon = '🃏';
+
+    if (info.legal) {
+      if (info.cleared) {
+        titleText = 'SOKKOKAATO! 🔥';
+        icon = '🔥';
+        subText = `Kortti kaatoi pöydän! ${pName} aloittaa puhtaalta pöydältä.`;
+      } else if (info.continues) {
+        titleText = 'SOKKOKAKKONEN! ⚡';
+        icon = '⚡';
+        subText = `Kakkosella saa jatkaa — ${pName} lyö heti uuden kortin!`;
+      } else {
+        titleText = 'SOKKOKORTTI SOPI! ✨';
+        icon = '✨';
+        subText = `Kortti sopi pöytään! Vuoro siirtyy.`;
+      }
+    } else {
+      titleText = 'EI SOPIVA! 💥';
+      icon = '💥';
+      const count = info.picked_up || 1;
+      subText = `Ei sopinut pöytään! ${pName} joutuu nostamaan ${count} korttia.`;
+    }
+
+    if (titleEl) titleEl.textContent = titleText;
+    if (detailsEl) detailsEl.textContent = detailsText;
+    if (subDetailsEl) subDetailsEl.textContent = subText;
+    if (iconEl) iconEl.textContent = icon;
+
+    blindOverlay.style.display = 'flex';
+    blindOverlay.classList.remove('fade-out');
+    blindOverlay.classList.add('animate-in');
+
+    if (this._blindTimeout) clearTimeout(this._blindTimeout);
+    this._blindTimeout = setTimeout(() => {
+      blindOverlay.classList.add('fade-out');
+      setTimeout(() => {
+        blindOverlay.style.display = 'none';
+        blindOverlay.classList.remove('animate-in', 'fade-out');
+      }, 400);
+    }, 2500);
   }
 
   /* ==========================================================================
