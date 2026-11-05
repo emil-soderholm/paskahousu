@@ -1462,6 +1462,8 @@ class GameApp {
       opponents.forEach(p => {
         const seat = document.createElement('div');
         seat.className = 'opponent-seat';
+        seat.id = `seat-${p.id}`;
+        seat.setAttribute('data-player-id', p.id);
         if (this.state.current_player_id === p.id && this.state.status === 'PLAYING') {
           seat.classList.add('active');
         }
@@ -1502,7 +1504,6 @@ class GameApp {
         }
 
         seat.innerHTML = `
-          <div class="table-bubble-anchor" id="bubbleAnchor-${p.id}"></div>
           <div class="opponent-seat-inner">
             <div class="opponent-identity">
               <div class="opponent-avatar-box">
@@ -2148,29 +2149,37 @@ class GameApp {
 
   showTableBubble(msg) {
     const isMe = (msg.player_id === this.playerId || (msg.name === this.playerName && msg.avatar === this.playerAvatar));
-    let anchor = isMe 
-      ? document.getElementById('myBubbleAnchor') 
-      : (msg.player_id ? document.getElementById(`bubbleAnchor-${msg.player_id}`) : null);
+    const container = document.getElementById('tableBubbleLayer') || document.querySelector('.felt-table-wrapper');
+    if (!container) return;
 
-    if (!anchor && !isMe) {
-      const seats = document.querySelectorAll('.opponent-seat');
-      for (const s of seats) {
-        if (s.querySelector('.opponent-name')?.textContent === msg.name) {
-          anchor = s.querySelector('.table-bubble-anchor');
-          break;
+    let targetEl = null;
+    if (isMe) {
+      targetEl = document.querySelector('.player-station');
+    } else {
+      if (msg.player_id) {
+        targetEl = document.getElementById(`seat-${msg.player_id}`);
+      }
+      if (!targetEl) {
+        const seats = document.querySelectorAll('.opponent-seat');
+        for (const s of seats) {
+          if (s.querySelector('.opponent-name')?.textContent === msg.name) {
+            targetEl = s;
+            break;
+          }
         }
+      }
+      if (!targetEl) {
+        targetEl = document.querySelector('.opponents-rail');
       }
     }
 
-    if (!anchor) return;
+    if (!targetEl) return;
 
     const emojiRegex = /^(\p{Extended_Pictographic}|\u200d|\ufe0f|\s)+$/u;
     const isEmoteOnly = emojiRegex.test(msg.text.trim()) && msg.text.trim().length <= 16;
 
-    anchor.innerHTML = '';
-
     const bubble = document.createElement('div');
-    bubble.className = `floating-table-bubble ${isEmoteOnly ? 'emote-only' : ''} ${isMe ? 'my-bubble' : ''}`;
+    bubble.className = `floating-table-bubble ${isEmoteOnly ? 'emote-only' : ''} ${isMe ? 'my-bubble' : 'opponent-bubble'}`;
 
     if (isEmoteOnly) {
       bubble.innerHTML = `<span class="table-bubble-emote">${msg.text}</span>`;
@@ -2183,14 +2192,30 @@ class GameApp {
       `;
     }
 
-    anchor.appendChild(bubble);
+    const feltRect = container.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+
+    const centerX = targetRect.left + targetRect.width / 2 - feltRect.left;
+    bubble.style.left = `${centerX}px`;
+
+    if (isMe) {
+      const bottomY = feltRect.bottom - targetRect.top + 8;
+      bubble.style.bottom = `${bottomY}px`;
+      bubble.style.top = 'auto';
+    } else {
+      const topY = targetRect.bottom - feltRect.top + 6;
+      bubble.style.top = `${topY}px`;
+      bubble.style.bottom = 'auto';
+    }
+
+    container.appendChild(bubble);
     window.sounds.playPop();
 
     setTimeout(() => {
       bubble.classList.add('fading-out');
       setTimeout(() => {
-        if (bubble.parentNode === anchor) {
-          anchor.removeChild(bubble);
+        if (bubble.parentNode === container) {
+          container.removeChild(bubble);
         }
       }, 400);
     }, 4200);

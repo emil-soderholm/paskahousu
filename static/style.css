@@ -914,7 +914,9 @@ input, select {
   flex-shrink: 0;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
+  overscroll-behavior-y: none;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -1660,7 +1662,15 @@ input, select {
   animation: deadPileFlash 1.2s ease-out;
 }
 
-/* Floating Table Speech & Emote Bubbles */
+/* Floating Table Speech & Emote Bubbles Layer */
+.table-bubble-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 300;
+  overflow: visible;
+}
+
 .table-bubble-anchor {
   pointer-events: none;
   z-index: 250;
@@ -1668,38 +1678,9 @@ input, select {
   justify-content: center;
 }
 
-/* Opponents' bubbles appear BELOW the seat pointing UP */
-.opponent-seat .table-bubble-anchor {
-  position: absolute;
-  bottom: -38px;
-  top: auto;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.opponent-seat .floating-table-bubble::after {
-  top: -5px;
-  bottom: auto;
-  border-width: 0 5px 5px;
-  border-color: transparent transparent rgba(15, 23, 42, 0.95) transparent;
-}
-
-/* Player's bubble appears ABOVE player station pointing DOWN */
-.my-bubble-anchor {
-  position: absolute;
-  top: -44px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.my-bubble-anchor .floating-table-bubble::after {
-  bottom: -5px;
-  top: auto;
-  border-width: 5px 5px 0;
-  border-color: rgba(15, 23, 42, 0.95) transparent;
-}
-
 .floating-table-bubble {
+  position: absolute;
+  transform: translateX(-50%);
   background: rgba(15, 23, 42, 0.96);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1716,7 +1697,7 @@ input, select {
   flex-direction: column;
   align-items: center;
   animation: bubblePop 0.25s var(--ease-bounce) forwards;
-  position: relative;
+  pointer-events: none;
 }
 
 .floating-table-bubble::after {
@@ -1728,9 +1709,23 @@ input, select {
   display: block;
 }
 
+.floating-table-bubble.opponent-bubble::after {
+  top: -6px;
+  bottom: auto;
+  border-width: 0 6px 6px;
+  border-color: transparent transparent var(--gold) transparent;
+}
+
 .floating-table-bubble.my-bubble {
   border-color: #60a5fa;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(96, 165, 250, 0.4);
+}
+
+.floating-table-bubble.my-bubble::after {
+  bottom: -6px;
+  top: auto;
+  border-width: 6px 6px 0;
+  border-color: #60a5fa transparent;
 }
 
 .floating-table-bubble.emote-only {
@@ -1757,13 +1752,13 @@ input, select {
 
 .floating-table-bubble.fading-out {
   opacity: 0;
-  transform: translateY(-12px) scale(0.85);
+  transform: translateX(-50%) translateY(-12px) scale(0.85);
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 @keyframes bubblePop {
-  0% { transform: scale(0.3) translateY(8px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% { transform: translateX(-50%) scale(0.3) translateY(8px); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
 }
 
 /* 4. Player Station (Bottom Area) */
