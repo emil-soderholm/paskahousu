@@ -251,6 +251,36 @@ class TestArabiaRules(unittest.TestCase):
         res_ok = self.game.play_cards(curr.id, [0], "8", source="table_up")
         self.assertTrue(res_ok["success"])
 
+    def test_blind_card_play_and_action_info(self):
+        curr = self.game.current_player()
+        curr.hand = []
+        self.game.draw_deck = []
+        curr.table_up = []
+        curr.table_down = [Card("♠", "5"), Card("♥", "9")]
+
+        # Play blind card 5 on empty table -> legal
+        res = self.game.play_blind_card(curr.id, 0)
+        self.assertTrue(res["success"])
+        self.assertTrue(res["legal"])
+        self.assertEqual(res["card"]["rank"], "5")
+        self.assertIsNotNone(self.game.last_action_info)
+        self.assertEqual(self.game.last_action_info["type"], "blind_card")
+        self.assertTrue(self.game.last_action_info["legal"])
+        self.assertEqual(self.game.last_action_info["card"]["rank"], "5")
+
+    def test_flip_from_deck_action_info(self):
+        curr = self.game.current_player()
+        self.game.draw_deck = [Card("♠", "7")]
+        self.game.play_pile = [PlayedCardEntry(Card("♦", "5"), "5", "other", False)]
+
+        res = self.game.flip_from_deck(curr.id)
+        self.assertTrue(res["success"])
+        self.assertTrue(res["fit"])
+        self.assertIsNotNone(self.game.last_action_info)
+        self.assertEqual(self.game.last_action_info["type"], "deck_flip")
+        self.assertTrue(self.game.last_action_info["legal"])
+        self.assertEqual(self.game.last_action_info["card"]["rank"], "7")
+
 
 if __name__ == "__main__":
     unittest.main()

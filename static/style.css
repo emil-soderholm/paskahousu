@@ -1574,6 +1574,48 @@ input, select {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
+/* Blind Card Reveal Variations */
+.blind-overlay.legal .kaato-modal-box {
+  border: 2px solid #10b981;
+  box-shadow: 0 0 50px rgba(16, 185, 129, 0.7), 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(16, 185, 129, 0.25);
+}
+
+.blind-overlay.illegal .kaato-modal-box {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 50px rgba(239, 68, 68, 0.75), 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(239, 68, 68, 0.25);
+}
+
+.blind-overlay.legal .kaato-fire-burst {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(5, 150, 105, 0.3) 35%, rgba(52, 211, 153, 0.12) 65%, transparent 75%);
+}
+
+.blind-overlay.illegal .kaato-fire-burst {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.55) 0%, rgba(185, 28, 28, 0.35) 35%, rgba(248, 113, 113, 0.12) 65%, transparent 75%);
+}
+
+.blind-card-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.blind-card-preview .playing-card {
+  width: 66px;
+  height: 94px;
+  margin-right: 0 !important;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
+  animation: blindCardFlip 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes blindCardFlip {
+  0% { transform: scale(0.25) rotateY(90deg); opacity: 0; }
+  60% { transform: scale(1.15) rotateY(0deg); opacity: 1; }
+  100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
 /* Keyframe Animations */
 @keyframes kaatoPopIn {
   0% { transform: scale(0.6) translateY(24px); opacity: 0; }
@@ -2060,12 +2102,15 @@ input, select {
   }
 }
 
-/* Hand Cards Dock (Centering + Left-Overflow Fix) */
+/* Hand Cards Dock (Centering + No Vertical Scroll) */
 .hand-scroll-wrapper {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: auto;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   display: flex;
   padding-top: 22px;
@@ -2084,10 +2129,11 @@ input, select {
   padding: 0 max(16px, env(safe-area-inset-left, 16px)) 0 max(16px, env(safe-area-inset-right, 16px));
   min-height: calc(var(--card-h) + 22px);
   width: max-content;
+  touch-action: pan-x;
 }
 
 /* ==========================================================================
-   PLAYING CARDS COMPONENT
+   PLAYING CARDS COMPONENT (Clean Mini-Card Style)
    ========================================================================== */
 .playing-card {
   width: var(--card-w);
@@ -2101,6 +2147,10 @@ input, select {
   transition: transform 0.18s var(--ease-bounce), box-shadow 0.18s ease;
   flex-shrink: 0;
   margin-right: -18px; /* Negative margin for realistic hand fan */
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 @media (min-width: 768px) {
@@ -2132,76 +2182,48 @@ input, select {
 .card-inner {
   position: absolute;
   inset: 0;
-  padding: 4px 5px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.card-corner {
+  padding: 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   line-height: 1;
-}
-
-.card-corner.bottom-right {
-  transform: rotate(180deg);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .card-rank {
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 5.5vw, 28px);
   font-weight: 900;
   letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.card-suit {
+  font-size: clamp(17px, 4.8vw, 24px);
+  line-height: 1;
+  margin-top: 3px;
 }
 
 @media (min-width: 768px) {
   .card-rank {
-    font-size: 16px;
+    font-size: 34px;
+  }
+  .card-suit {
+    font-size: 28px;
+    margin-top: 4px;
   }
 }
 
-.card-suit {
-  font-size: 11px;
-}
-
-.card-center {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-center-suit {
-  font-size: 22px;
-}
-
-@media (min-width: 768px) {
-  .card-center-suit {
-    font-size: 32px;
+@media (max-width: 380px), (max-height: 680px) {
+  .card-rank {
+    font-size: 18px;
   }
-}
-
-.court-art, .ten-art, .two-art {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-}
-
-.court-badge, .ten-icon, .two-icon {
-  font-size: 18px;
-}
-
-@media (min-width: 768px) {
-  .court-badge, .ten-icon, .two-icon {
-    font-size: 26px;
+  .card-suit {
+    font-size: 15px;
+    margin-top: 2px;
   }
-}
-
-.court-subsuit {
-  font-size: 9px;
-  margin-top: 1px;
 }
 
 /* Suit Colors */
@@ -2491,6 +2513,47 @@ input, select {
   font-size: 16px;
   font-weight: 900;
   color: #fff;
+}
+
+.music-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.music-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+}
+
+#musicCurrentTime {
+  text-align: right;
+}
+
+#musicDuration {
+  text-align: left;
+}
+
+.music-progress-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: var(--gold);
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  outline: none;
+  transition: height 0.15s ease;
+}
+
+.music-progress-slider:hover,
+.music-progress-slider:active {
+  height: 8px;
 }
 
 .music-player-controls {

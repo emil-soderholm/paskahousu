@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Tuutan ja Emailin pelihuane</title>
-  <link rel="stylesheet" href="style.css?v=11">
+  <title>Pudotuspelit</title>
+  <link rel="stylesheet" href="style.css?v=14">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,7 +16,7 @@
     <div class="header-left">
       <div class="logo-group" id="headerLogoGroup" title="Päävalikko / Poistu">
         <span class="logo-icon">🃏</span>
-        <span class="logo-text"><span class="logo-full">Tuutan ja Emailin pelihuane</span><span class="logo-short">Pelihuone</span></span>
+        <span class="logo-text"><span class="logo-full">Pudotuspelit</span><span class="logo-short">Pudotuspelit</span></span>
       </div>
     </div>
 
@@ -51,7 +51,7 @@
   </header>
 
   <!-- Background Music Audio Player -->
-  <audio id="bgMusicPlayer" loop preload="auto">
+  <audio id="bgMusicPlayer" preload="auto">
     <source src="music.m4a" type="audio/mp4">
     <source src="music.mp3" type="audio/mpeg">
   </audio>
@@ -69,7 +69,7 @@
           <!-- Brand Header -->
           <div class="lobby-brand">
             <div class="brand-badge">✨ Korttihuone</div>
-            <h1 class="lobby-title">Tuutan ja Emailin pelihuane</h1>
+            <h1 class="lobby-title">Pudotuspelit</h1>
             <p class="lobby-subtitle">Valepaskahousu, Paskahousu & Arabia</p>
           </div>
 
@@ -273,6 +273,18 @@
           </div>
         </div>
 
+        <!-- Blind Card Reveal Overlay -->
+        <div id="blindCardOverlay" class="kaato-overlay blind-overlay" style="display:none;">
+          <div class="kaato-fire-burst blind-burst"></div>
+          <div class="kaato-modal-box blind-modal-box">
+            <div class="blind-card-preview" id="blindCardPreview"></div>
+            <div class="kaato-icon-badge" id="blindIcon">🃏</div>
+            <div id="blindTitle" class="kaato-title">SOKKOKORTTI!</div>
+            <div id="blindDetails" class="kaato-sub">Pelaaja käänsi sokkokortin!</div>
+            <div id="blindSubDetails" class="kaato-extra"></div>
+          </div>
+        </div>
+
         <!-- Player Station (Bottom Area) -->
         <div class="player-station">
           <div id="myBubbleAnchor" class="table-bubble-anchor my-bubble-anchor"></div>
@@ -452,6 +464,13 @@
             </div>
           </div>
 
+          <!-- Music Progress / Seek Bar -->
+          <div class="music-progress-row">
+            <span id="musicCurrentTime" class="music-time-label">0:00</span>
+            <input type="range" id="musicProgressBar" min="0" max="100" value="0" step="0.1" class="music-progress-slider" title="Kappaleen kohta (Klikkaa tai vedä)">
+            <span id="musicDuration" class="music-time-label">0:00</span>
+          </div>
+
           <div class="music-player-controls">
             <button type="button" id="musicPrevBtn" class="btn-music-ctrl" title="Edellinen kappale">⏮</button>
             <button type="button" id="musicPlayPauseBtn" class="btn-music-ctrl btn-play-main" title="Toista / Pysäytä">⏸</button>
@@ -494,8 +513,8 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=11"></script>
-  <script src="audio.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="cards.js?v=14"></script>
+  <script src="audio.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

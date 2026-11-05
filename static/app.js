@@ -5,7 +5,7 @@
 
 // Finnish strings dictionary
 const FI_STRINGS = {
-  appTitle: "Tuutan ja Emailin pelihuane",
+  appTitle: "Pudotuspelit",
   tagline: "Perinteinen suomalainen korttipeli",
   createRoom: "Luo uusi pelihuone",
   joinRoom: "Liity koodilla",
@@ -81,6 +81,8 @@ class GameApp {
     this.selectedTableSwapIndex = null;
     this.bluffDeclaredRank = '3';
     this.challengeInterval = null;
+    this._lastActionId = null;
+    this._blindTimeout = null;
 
     this.initDOM();
     this.initMusic();
@@ -635,6 +637,7 @@ class GameApp {
 
     const savedMuted = localStorage.getItem('valepaska_music_muted') === 'true';
     this.musicPlayer.muted = savedMuted;
+    this.musicPlayer.loop = false;
 
     // Load initial track
     this.loadAndPlayTrack(this.currentTrackIndex, false);
@@ -712,6 +715,54 @@ class GameApp {
       });
     }
 
+    // Music Progress / Seek Bar Controls
+    const progressBar = document.getElementById('musicProgressBar');
+    const currentTimeEl = document.getElementById('musicCurrentTime');
+    const durationEl = document.getElementById('musicDuration');
+    let isScrubbing = false;
+
+    const formatTime = (secs) => {
+      if (isNaN(secs) || secs < 0) return '0:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    this.musicPlayer.addEventListener('timeupdate', () => {
+      if (!isScrubbing && progressBar && this.musicPlayer.duration) {
+        progressBar.value = (this.musicPlayer.currentTime / this.musicPlayer.duration) * 100;
+      }
+      if (currentTimeEl) {
+        currentTimeEl.textContent = formatTime(this.musicPlayer.currentTime);
+      }
+    });
+
+    const updateDuration = () => {
+      if (durationEl && this.musicPlayer.duration) {
+        durationEl.textContent = formatTime(this.musicPlayer.duration);
+      }
+    };
+
+    this.musicPlayer.addEventListener('loadedmetadata', updateDuration);
+    this.musicPlayer.addEventListener('durationchange', updateDuration);
+
+    if (progressBar) {
+      progressBar.addEventListener('input', (e) => {
+        isScrubbing = true;
+        if (currentTimeEl && this.musicPlayer.duration) {
+          const previewSec = (parseFloat(e.target.value) / 100) * this.musicPlayer.duration;
+          currentTimeEl.textContent = formatTime(previewSec);
+        }
+      });
+
+      progressBar.addEventListener('change', (e) => {
+        isScrubbing = false;
+        if (this.musicPlayer.duration) {
+          this.musicPlayer.currentTime = (parseFloat(e.target.value) / 100) * this.musicPlayer.duration;
+        }
+      });
+    }
+
     this.musicPlayer.addEventListener('play', () => this.updateMusicUI());
     this.musicPlayer.addEventListener('pause', () => this.updateMusicUI());
 
@@ -750,12 +801,20 @@ class GameApp {
     localStorage.setItem('valepaska_selected_track', track.id);
 
     this.musicPlayer.pause();
+    this.musicPlayer.loop = false;
     let sources = `<source src="${track.file}" type="audio/mp4">`;
     if (track.fallback && track.fallback !== track.file) {
       sources += `\n      <source src="${track.fallback}" type="audio/mpeg">`;
     }
     this.musicPlayer.innerHTML = sources;
     this.musicPlayer.load();
+
+    const progressBar = document.getElementById('musicProgressBar');
+    if (progressBar) progressBar.value = 0;
+    const currentTimeEl = document.getElementById('musicCurrentTime');
+    if (currentTimeEl) currentTimeEl.textContent = '0:00';
+    const durationEl = document.getElementById('musicDuration');
+    if (durationEl) durationEl.textContent = '0:00';
 
     if (autoplay) {
       this.musicPlayer.play().then(() => {
@@ -1033,9 +1092,18 @@ class GameApp {
       }
     }
 
+    if (newState.last_action_info && newState.last_action_info.action_id && newState.last_action_info.action_id !== this._lastActionId) {
+      this._lastActionId = newState.last_action_info.action_id;
+      if (newState.last_action_info.type === 'blind_card' || newState.last_action_info.type === 'deck_flip') {
+        this.showCardRevealCelebration(newState.last_action_info);
+      }
+    }
+
     if (newState.dead_pile_count > oldState.dead_pile_count) {
       window.sounds.playKaatuu();
-      this.showKaatoCelebration(newState.last_action_info);
+      if (!newState.last_action_info || (newState.last_action_info.type !== 'blind_card' && newState.last_action_info.type !== 'deck_flip')) {
+        this.showKaatoCelebration(newState.last_action_info);
+      }
     }
 
     if (newState.play_pile.length > oldState.play_pile.length) {
@@ -1127,6 +1195,112 @@ class GameApp {
         kaatoOverlay.classList.remove('animate-in', 'fade-out');
       }, 400);
     }, 2000);
+  }
+
+  showCardRevealCelebration(info) {
+    const blindOverlay = document.getElementById('blindCardOverlay');
+    if (!blindOverlay) return;
+
+    const feltTable = document.querySelector('.felt-table-wrapper');
+    const deadPile = document.getElementById('deadPileArea');
+
+    const previewEl = document.getElementById('blindCardPreview');
+    const titleEl = document.getElementById('blindTitle');
+    const detailsEl = document.getElementById('blindDetails');
+    const subDetailsEl = document.getElementById('blindSubDetails');
+    const iconEl = document.getElementById('blindIcon');
+
+    blindOverlay.classList.remove('legal', 'illegal');
+    if (info.legal) {
+      blindOverlay.classList.add('legal');
+    } else {
+      blindOverlay.classList.add('illegal');
+    }
+
+    // Play sounds & effects
+    if (info.legal) {
+      if (info.cleared) {
+        window.sounds.playKaatuu();
+        if (deadPile) {
+          deadPile.classList.remove('kaato-impact');
+          void deadPile.offsetWidth;
+          deadPile.classList.add('kaato-impact');
+          setTimeout(() => deadPile.classList.remove('kaato-impact'), 1400);
+        }
+      } else {
+        window.sounds.playHonestFanfare();
+      }
+    } else {
+      window.sounds.playLiarCaught();
+    }
+
+    if (feltTable) {
+      feltTable.classList.remove('table-shake');
+      void feltTable.offsetWidth;
+      feltTable.classList.add('table-shake');
+      setTimeout(() => feltTable.classList.remove('table-shake'), 600);
+    }
+
+    // Render the revealed card preview
+    if (previewEl && info.card) {
+      previewEl.innerHTML = '';
+      const cardEl = createCardElement(info.card);
+      previewEl.appendChild(cardEl);
+    }
+
+    const pName = info.player_name || 'Pelaaja';
+    const cardRank = (info.card && info.card.rank) || '';
+    const suitSym = (info.card && SUIT_SYMBOLS[info.card.suit]) || '';
+    const isDeck = info.type === 'deck_flip';
+    const sourceText = isDeck ? 'pakasta' : 'sokkona pöydästä';
+
+    let titleText = isDeck ? 'PAKASTA KÄÄNNETTY! 🂠' : 'SOKKOKORTTI! 🃏';
+    let detailsText = `${pName} käänsi ${sourceText}: ${cardRank}${suitSym}`;
+    let subText = '';
+    let icon = isDeck ? '🂠' : '🃏';
+
+    if (info.legal) {
+      if (info.cleared) {
+        titleText = isDeck ? 'PAKASTA KAATUI! 🔥' : 'SOKKOKAATO! 🔥';
+        icon = '🔥';
+        subText = `Kortti kaatoi pöydän! ${pName} aloittaa puhtaalta pöydältä.`;
+      } else if (info.continues) {
+        titleText = isDeck ? 'PAKASTA KAKKONEN! ⚡' : 'SOKKOKAKKONEN! ⚡';
+        icon = '⚡';
+        subText = `Kakkosella saa jatkaa — ${pName} lyö heti uuden kortin!`;
+      } else {
+        titleText = isDeck ? 'PAKASTA SOPI! ✨' : 'SOKKOKORTTI SOPI! ✨';
+        icon = '✨';
+        subText = `Kortti sopi pöytään! Vuoro siirtyy.`;
+      }
+    } else {
+      titleText = 'EI SOPIVA! 💥';
+      icon = '💥';
+      const count = info.picked_up || 1;
+      subText = `Ei sopinut pöytään! ${pName} joutuu nostamaan ${count} korttia.`;
+    }
+
+    if (titleEl) titleEl.textContent = titleText;
+    if (detailsEl) detailsEl.textContent = detailsText;
+    if (subDetailsEl) subDetailsEl.textContent = subText;
+    if (iconEl) iconEl.textContent = icon;
+
+    blindOverlay.style.display = 'flex';
+    blindOverlay.classList.remove('fade-out');
+    blindOverlay.classList.add('animate-in');
+
+    if (this._blindTimeout) clearTimeout(this._blindTimeout);
+    this._blindTimeout = setTimeout(() => {
+      blindOverlay.classList.add('fade-out');
+      setTimeout(() => {
+        blindOverlay.style.display = 'none';
+        blindOverlay.classList.remove('animate-in', 'fade-out');
+      }, 400);
+    }, 2500);
+  }
+
+  showBlindCardCelebration(info) {
+    this.showCardRevealCelebration(info);
   }
 
   /* ==========================================================================

@@ -119,6 +119,66 @@ class TestSyntaxCompilation(unittest.TestCase):
             except py_compile.PyCompileError as e:
                 self.fail(f"Syntax error in {py_file}: {e}")
 
+    def test_all_javascript_files_syntax(self):
+        root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        static_dir = os.path.join(root_dir, "static")
+        js_files = [
+            os.path.join(static_dir, f)
+            for f in os.listdir(static_dir)
+            if f.endswith(".js")
+        ]
+        self.assertGreater(len(js_files), 0)
+
+        for js_file in js_files:
+            with open(js_file, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Verify balanced braces, brackets, and parentheses
+            in_str = None
+            in_block_comment = False
+            stack = []
+            for line_no, line in enumerate(content.splitlines(), 1):
+                i = 0
+                while i < len(line):
+                    if in_block_comment:
+                        if line[i:i+2] == "*/":
+                            in_block_comment = False
+                            i += 2
+                            continue
+                        i += 1
+                        continue
+                    if in_str:
+                        if line[i:i+2] == "\\\\":
+                            i += 2
+                            continue
+                        if line[i] == in_str:
+                            in_str = None
+                        i += 1
+                        continue
+                    if line[i:i+2] == "/*":
+                        in_block_comment = True
+                        i += 2
+                        continue
+                    if line[i:i+2] == "//":
+                        break
+                    ch = line[i]
+                    if ch in ('"', "'", "`"):
+                        in_str = ch
+                        i += 1
+                        continue
+                    if ch in "({[":
+                        stack.append((ch, line_no, i))
+                    elif ch in ")}]":
+                        if not stack:
+                            self.fail(f"Unmatched closing '{ch}' in {js_file} at line {line_no}:{i}")
+                        expected = {"(": ")", "{": "}", "[": "]"}[stack[-1][0]]
+                        if ch != expected:
+                            self.fail(f"Mismatched closing '{ch}' (expected '{expected}') in {js_file} at line {line_no}:{i}")
+                        stack.pop()
+                    i += 1
+
+            self.assertEqual(len(stack), 0, f"Unclosed brackets in {js_file}: {stack}")
+
 
 if __name__ == "__main__":
     unittest.main()

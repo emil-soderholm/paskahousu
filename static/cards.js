@@ -68,44 +68,10 @@ function createCardElement(card, options = {}) {
   if (options.playable) el.classList.add('playable');
   if (options.unplayable) el.classList.add('unplayable');
 
-  // Center display: large suit or court icon
-  let centerContent = `<span class="card-center-suit">${symbol}</span>`;
-  if (['J', 'Q', 'K', 'A'].includes(rank)) {
-    centerContent = `
-      <div class="court-art">
-        <span class="court-badge">${COURT_ICONS[rank] || symbol}</span>
-        <span class="court-subsuit">${symbol}</span>
-      </div>
-    `;
-  } else if (rank === '10') {
-    centerContent = `
-      <div class="ten-art">
-        <span class="ten-icon">${COURT_ICONS['10']}</span>
-        <span class="court-subsuit">${symbol}</span>
-      </div>
-    `;
-  } else if (rank === '2') {
-    centerContent = `
-      <div class="two-art">
-        <span class="two-icon">${COURT_ICONS['2']}</span>
-        <span class="court-subsuit">${symbol}</span>
-      </div>
-    `;
-  }
-
   el.innerHTML = `
     <div class="card-inner">
-      <div class="card-corner top-left">
-        <span class="card-rank">${rank}</span>
-        <span class="card-suit">${symbol}</span>
-      </div>
-      <div class="card-center">
-        ${centerContent}
-      </div>
-      <div class="card-corner bottom-right">
-        <span class="card-rank">${rank}</span>
-        <span class="card-suit">${symbol}</span>
-      </div>
+      <span class="card-rank">${rank}</span>
+      <span class="card-suit">${symbol}</span>
       ${options.badge ? `<div class="card-badge">${options.badge}</div>` : ''}
     </div>
   `;

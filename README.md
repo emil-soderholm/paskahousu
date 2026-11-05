@@ -1,4 +1,4 @@
-# 🃏 Tuutan ja Emailin Pelihuone
+# 🃏 Pudotuspelit
 
 Moderni, responsiivinen ja nollarivinen moninpelisovellus suomalaisille suosikkikorttipeleille: **Paskahousu**, **Valepaskahousu** ja **Arabia**.
 
@@ -143,4 +143,4 @@ Pelihuone/
 └── README.md              # Tämä ohjetiedosto
 ```
 
-Hauskoja pelihetkiä pelihuoneessa! 🃏🔥
+Hauskoja pelihetkiä Pudotuspeleissä! 🃏🔥
