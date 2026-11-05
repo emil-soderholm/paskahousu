@@ -2515,6 +2515,47 @@ input, select {
   color: #fff;
 }
 
+.music-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.music-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+}
+
+#musicCurrentTime {
+  text-align: right;
+}
+
+#musicDuration {
+  text-align: left;
+}
+
+.music-progress-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  accent-color: var(--gold);
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  outline: none;
+  transition: height 0.15s ease;
+}
+
+.music-progress-slider:hover,
+.music-progress-slider:active {
+  height: 8px;
+}
+
 .music-player-controls {
   display: flex;
   align-items: center;

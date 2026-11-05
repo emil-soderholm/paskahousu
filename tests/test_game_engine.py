@@ -268,6 +268,19 @@ class TestArabiaRules(unittest.TestCase):
         self.assertTrue(self.game.last_action_info["legal"])
         self.assertEqual(self.game.last_action_info["card"]["rank"], "5")
 
+    def test_flip_from_deck_action_info(self):
+        curr = self.game.current_player()
+        self.game.draw_deck = [Card("♠", "7")]
+        self.game.play_pile = [PlayedCardEntry(Card("♦", "5"), "5", "other", False)]
+
+        res = self.game.flip_from_deck(curr.id)
+        self.assertTrue(res["success"])
+        self.assertTrue(res["fit"])
+        self.assertIsNotNone(self.game.last_action_info)
+        self.assertEqual(self.game.last_action_info["type"], "deck_flip")
+        self.assertTrue(self.game.last_action_info["legal"])
+        self.assertEqual(self.game.last_action_info["card"]["rank"], "7")
+
 
 if __name__ == "__main__":
     unittest.main()

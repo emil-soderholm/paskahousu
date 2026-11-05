@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Pudotuspelit</title>
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
   <meta name="theme-color" content="#0b0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -51,7 +51,7 @@
   </header>
 
   <!-- Background Music Audio Player -->
-  <audio id="bgMusicPlayer" loop preload="auto">
+  <audio id="bgMusicPlayer" preload="auto">
     <source src="music.m4a" type="audio/mp4">
     <source src="music.mp3" type="audio/mpeg">
   </audio>
@@ -464,6 +464,13 @@
             </div>
           </div>
 
+          <!-- Music Progress / Seek Bar -->
+          <div class="music-progress-row">
+            <span id="musicCurrentTime" class="music-time-label">0:00</span>
+            <input type="range" id="musicProgressBar" min="0" max="100" value="0" step="0.1" class="music-progress-slider" title="Kappaleen kohta (Klikkaa tai vedä)">
+            <span id="musicDuration" class="music-time-label">0:00</span>
+          </div>
+
           <div class="music-player-controls">
             <button type="button" id="musicPrevBtn" class="btn-music-ctrl" title="Edellinen kappale">⏮</button>
             <button type="button" id="musicPlayPauseBtn" class="btn-music-ctrl btn-play-main" title="Toista / Pysäytä">⏸</button>
@@ -506,8 +513,8 @@
   </main>
 
   <!-- Scripts -->
-  <script src="cards.js?v=12"></script>
-  <script src="audio.js?v=12"></script>
-  <script src="app.js?v=12"></script>
+  <script src="cards.js?v=13"></script>
+  <script src="audio.js?v=13"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

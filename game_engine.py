@@ -1096,6 +1096,7 @@ class GameState:
         card = self.draw_deck.pop()
         top_entry = self.get_top_pile_card()
         legal, _ = self.is_rank_legal_on_pile(card.rank, top_entry)
+        self.action_counter += 1
 
         if legal:
             # Automatically played face up!
@@ -1116,7 +1117,22 @@ class GameState:
             clears = self.will_move_clear_pile(card.rank, 1)
             if clears:
                 self._clear_pile_kaatuu(player, declared_rank=card.rank, cards_count=1)
+                if self.last_action_info:
+                    self.last_action_info["is_deck_flip"] = True
+                    self.last_action_info["card"] = card.to_dict()
+                    self.last_action_info["action_id"] = self.action_counter
                 return {"success": True, "fit": True, "card": card.to_dict(), "cleared": True}
+
+            self.last_action_info = {
+                "type": "deck_flip",
+                "action_id": self.action_counter,
+                "player_id": player.id,
+                "player_name": player.name,
+                "card": card.to_dict(),
+                "legal": True,
+                "cleared": False,
+                "continues": (self.rules.mode == "arabia" and card.rank == '2')
+            }
 
             # In Arabia: if flipped card is 2, player continues their turn!
             if self.rules.mode == "arabia" and card.rank == '2':
@@ -1146,6 +1162,17 @@ class GameState:
             player.sort_hand()
             player.stats["cards_picked_up"] += len(pickup_cards)
             self.play_pile = []
+
+            self.last_action_info = {
+                "type": "deck_flip",
+                "action_id": self.action_counter,
+                "player_id": player.id,
+                "player_name": player.name,
+                "card": card.to_dict(),
+                "legal": False,
+                "cleared": False,
+                "picked_up": len(pickup_cards)
+            }
 
             self.add_log(
                 f"{player.name} käänsi pakasta {card.rank}{card.suit}, ei sopinut! {player.name} nostaa pöydän ({len(pickup_cards)} kpl)!",
