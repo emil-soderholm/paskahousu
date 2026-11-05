@@ -115,9 +115,7 @@ class GameApp {
 
     // Avatar picker buttons
     document.querySelectorAll('.avatar-btn').forEach(btn => {
-      if (btn.getAttribute('data-avatar') === this.playerAvatar) {
-        btn.classList.add('selected');
-      }
+      btn.classList.toggle('selected', btn.getAttribute('data-avatar') === this.playerAvatar);
       btn.addEventListener('click', () => {
         document.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');

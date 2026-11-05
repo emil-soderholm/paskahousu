@@ -5,6 +5,7 @@ and end-to-end full game simulations across all 3 game modes.
 """
 
 import unittest
+import random
 from game_engine import GameState, Player, Card, GameRules, PlayedCardEntry
 from bot_ai import BotAI
 
@@ -79,6 +80,7 @@ class TestBotAIDecisions(unittest.TestCase):
 class TestBotSimulations(unittest.TestCase):
     def _run_simulation_batch(self, mode: str, count: int = 3):
         for g in range(count):
+            random.seed(42 + g * 17)
             rules = GameRules(mode=mode)
             game = GameState(f"SIM_{mode}_{g}", rules)
             game.players = [
