@@ -1862,14 +1862,29 @@ input, select {
 }
 
 .dock-hint.hint-flash {
-  animation: hintFlashPulse 0.9s ease-in-out;
+  display: inline-block;
+  transform-origin: right center;
+  animation: hintFlashPulse 0.9s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @keyframes hintFlashPulse {
-  0%, 100% { transform: scale(1); color: var(--gold); }
-  25% { transform: scale(1.08); color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.7); }
-  50% { transform: scale(1.04); color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
-  75% { transform: scale(1.08); color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.7); }
+  0% { transform: scale(1); color: var(--gold); }
+  20% { transform: scale(1.15); color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.9); }
+  45% { transform: scale(1.05); color: #f59e0b; text-shadow: 0 0 8px rgba(245, 158, 11, 0.8); }
+  70% { transform: scale(1.12); color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.9); }
+  100% { transform: scale(1); color: var(--gold); text-shadow: none; }
+}
+
+.btn-shake {
+  animation: buttonShake 0.4s ease-in-out;
+}
+
+@keyframes buttonShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
 }
 
 .floating-table-bubble.fading-out {

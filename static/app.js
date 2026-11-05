@@ -2052,11 +2052,23 @@ class GameApp {
 
       // In Arabia: Court cards locked until first pile clear
       if (this.state.rules.mode === 'arabia' && !this.state.first_kaato_done && ['J', 'Q', 'K', 'A'].includes(declaredRank)) {
-        const hintEl = document.getElementById('tableCardsSwapHint');
+        const hintEl = document.getElementById('swapHintTag');
         if (hintEl) {
           hintEl.classList.remove('hint-flash');
           void hintEl.offsetWidth;
           hintEl.classList.add('hint-flash');
+          hintEl.addEventListener('animationend', () => {
+            hintEl.classList.remove('hint-flash');
+          }, { once: true });
+        }
+        const playBtn = document.getElementById('playCardsBtn');
+        if (playBtn) {
+          playBtn.classList.remove('btn-shake');
+          void playBtn.offsetWidth;
+          playBtn.classList.add('btn-shake');
+          playBtn.addEventListener('animationend', () => {
+            playBtn.classList.remove('btn-shake');
+          }, { once: true });
         }
         window.sounds.playPop();
         return;
